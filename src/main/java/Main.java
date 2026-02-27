@@ -98,6 +98,7 @@ public class Main {
 
                 if (choice.finishReason().equals(ChatCompletion.Choice.FinishReason.STOP)) {
                     System.out.println(choice.message().content().orElse(""));
+                    break;
                 }
                 else {
                     messages.add(choice.message());
