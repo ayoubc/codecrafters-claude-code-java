@@ -1,3 +1,5 @@
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openai.client.OpenAIClient;
 import com.openai.client.okhttp.OpenAIOkHttpClient;
 import com.openai.core.JsonValue;
@@ -5,8 +7,11 @@ import com.openai.models.FunctionDefinition;
 import com.openai.models.FunctionParameters;
 import com.openai.models.chat.completions.ChatCompletion;
 import com.openai.models.chat.completions.ChatCompletionCreateParams;
+import com.openai.models.chat.completions.ChatCompletionMessageToolCall;
 import com.openai.models.chat.completions.ChatCompletionTool;
 
+import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -70,5 +75,23 @@ public class Main {
 
         // TODO: Uncomment the line below to pass the first stage
          System.out.print(response.choices().get(0).message().content().orElse(""));
+         List<ChatCompletionMessageToolCall> toolCalls = response.choices().getFirst()
+                 .message().toolCalls().orElse(null);
+         if (toolCalls != null && !toolCalls.isEmpty()) {
+            ChatCompletionMessageToolCall.Function fun = toolCalls.getFirst().function();
+            if (fun.name().equals("Read")) {
+                ObjectMapper mapper = new ObjectMapper();
+                try {
+                    JsonNode rootNode = mapper.readTree(fun.arguments());
+                    System.out.println(readFile(rootNode.get("file_path").asText()));
+                }
+                catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+         }
+    }
+    private static File readFile(String path) {
+        return new File(path);
     }
 }
