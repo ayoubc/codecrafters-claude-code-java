@@ -9,7 +9,6 @@ import com.openai.models.chat.completions.*;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
 import java.util.*;
 
 public class Main {
@@ -39,7 +38,8 @@ public class Main {
         Queue<ChatCompletionMessage> messages = new LinkedList<>();
         messages.add(
                 ChatCompletionMessage.builder()
-                        .role( JsonValue.from("user"))
+                        .role(JsonValue.from("user"))
+                        .refusal("")
                         .content(prompt)
                         .build()
         );
@@ -54,7 +54,7 @@ public class Main {
                         JsonNode rootNode = mapper.readTree(fun.arguments());
                         messages.add(
                                 ChatCompletionMessage.builder()
-                                        .role( JsonValue.from("tool"))
+                                        .role(JsonValue.from("tool"))
                                         // need to add tool_call_id
                                         .content(readFile(rootNode.get("file_path").asText()))
                                         .build()
