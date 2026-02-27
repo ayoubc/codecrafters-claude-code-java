@@ -76,10 +76,10 @@ public class Main {
         System.err.println("Logs from your program will appear here!");
 
         // TODO: Uncomment the line below to pass the first stage
-         System.out.print(response.choices().get(0).message().content().orElse(""));
-         List<ChatCompletionMessageToolCall> toolCalls = response.choices().getFirst()
+        System.out.print(response.choices().get(0).message().content().orElse(""));
+        List<ChatCompletionMessageToolCall> toolCalls = response.choices().getFirst()
                  .message().toolCalls().orElse(null);
-         if (toolCalls != null && !toolCalls.isEmpty()) {
+        if (toolCalls != null && !toolCalls.isEmpty()) {
             ChatCompletionMessageToolCall.Function fun = toolCalls.getFirst().function();
             if (fun.name().equals("Read")) {
                 ObjectMapper mapper = new ObjectMapper();
@@ -91,9 +91,9 @@ public class Main {
                     e.printStackTrace();
                 }
             }
-         }
+        }
     }
-    private static String readFile(String path) throws FileNotFoundException {
+    private static String readFile(String path) {
         try (InputStream is = new FileInputStream(path)) {
             return new String(is.readAllBytes(), StandardCharsets.UTF_8);
         } catch (IOException e) {
