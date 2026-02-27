@@ -10,7 +10,9 @@ import com.openai.models.chat.completions.ChatCompletionCreateParams;
 import com.openai.models.chat.completions.ChatCompletionMessageToolCall;
 import com.openai.models.chat.completions.ChatCompletionTool;
 
-import java.io.File;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -91,7 +93,11 @@ public class Main {
             }
          }
     }
-    private static File readFile(String path) {
-        return new File(path);
+    private static String readFile(String path) throws FileNotFoundException {
+        try (InputStream is = new FileInputStream(path)) {
+            return new String(is.readAllBytes(), StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 }
