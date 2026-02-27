@@ -44,10 +44,10 @@ public class Main {
         FunctionParameters parameters = FunctionParameters.builder()
                 .putAdditionalProperty("type", JsonValue.from("object"))
                 .putAdditionalProperty("properties", JsonValue.from(properties))
-                .putAdditionalProperty("required", JsonValue.from(List.of(JsonValue.from("file_path"))))
+                .putAdditionalProperty("required", JsonValue.from(List.of("file_path")))
                 .build();
 
-        FunctionDefinition readFunction = FunctionDefinition.builder()
+        FunctionDefinition function = FunctionDefinition.builder()
                 .name("Read")
                 .description("Read and return the contents of a file")
                 .parameters(parameters)
@@ -57,7 +57,7 @@ public class Main {
                 ChatCompletionCreateParams.builder()
                         .model("anthropic/claude-haiku-4.5")
                         .addUserMessage(prompt)
-                        .addTool(ChatCompletionTool.builder().function(readFunction).build())
+                        .addTool(ChatCompletionTool.builder().function(function).build())
                         .build()
         );
 
