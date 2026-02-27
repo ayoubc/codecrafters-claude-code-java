@@ -57,6 +57,7 @@ public class Main {
                                         .role(JsonValue.from("tool"))
                                         // need to add tool_call_id
                                         .content(readFile(rootNode.get("file_path").asText()))
+                                        .refusal("")
                                         .build()
                         );
 //                        System.out.println(readFile(rootNode.get("file_path").asText()));
