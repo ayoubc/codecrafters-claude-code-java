@@ -73,13 +73,14 @@ public class Main {
 
             ChatCompletion response = client.chat().completions().create(chatParams.build());
             ChatCompletion.Choice choice = response.choices().getFirst();
+            ChatCompletionMessage message = choice.message();
             if (choice.finishReason().equals(ChatCompletion.Choice.FinishReason.STOP)) {
-                System.out.println(choice.message().content().orElse(""));
+                System.out.println(message.content().orElse(""));
                 break;
             }
             else {
-                ChatCompletionMessage message = response.choices().getFirst().message();
                 List<ChatCompletionMessageToolCall> toolCalls = message.toolCalls().orElse(null);
+                messageHistory.add(message);
                 if (toolCalls != null) {
                     for (ChatCompletionMessageToolCall toolCall:toolCalls) {
                         ChatCompletionMessageToolCall.Function fun = toolCall.function();
@@ -101,9 +102,6 @@ public class Main {
                             }
                         }
                     }
-                }
-                else {
-                    messageHistory.add(message);
                 }
             }
         }
