@@ -72,7 +72,9 @@ public class Main {
 
 
             ChatCompletion response = client.chat().completions().create(chatParams.build());
+            response.choices().forEach(choice -> System.out.println(choice.finishReason()));
             ChatCompletion.Choice choice = response.choices().getFirst();
+            
             ChatCompletionMessage message = choice.message();
             if (choice.finishReason().equals(ChatCompletion.Choice.FinishReason.STOP)) {
                 System.out.println(message.content().orElse(""));
