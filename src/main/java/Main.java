@@ -12,6 +12,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 public class Main {
+    private static final ObjectMapper mapper = new ObjectMapper();
+    private static final String MODEL = "anthropic/claude-haiku-4.5";
+
     public static void main(String[] args) {
         if (args.length < 2 || !"-p".equals(args[0])) {
             System.err.println("Usage: program -p <prompt>");
@@ -65,26 +68,23 @@ public class Main {
 
         while (true) {
             ChatCompletionCreateParams.Builder chatParams = ChatCompletionCreateParams.builder()
-                    .model("anthropic/claude-haiku-4.5")
+                    .model(MODEL)
                     .addTool(ChatCompletionTool.builder().function(function).build());
 
             messageHistory.forEach(chatParams::addMessage);
             
             ChatCompletion response = client.chat().completions().create(chatParams.build());
-//            int i=0;
-//            for (var choice:response.choices()) {
-//                System.err.println("Choice "+i+ " : " + choice.finishReason());
-//                i++;
-//            }
+
             ChatCompletion.Choice choice = response.choices().getFirst();
             ChatCompletionMessage message = choice.message();
             messageHistory.add(message);
             List<ChatCompletionMessageToolCall> toolCalls = message.toolCalls().orElse(null);
             if (toolCalls != null && !toolCalls.isEmpty()) {
+                System.err.println("Number of tool calls: " + toolCalls.size());
                 for (ChatCompletionMessageToolCall toolCall:toolCalls) {
                     ChatCompletionMessageToolCall.Function fun = toolCall.function();
                     if (fun.name().equals("Read")) {
-                        ObjectMapper mapper = new ObjectMapper();
+
                         try {
                             JsonNode rootNode = mapper.readTree(fun.arguments());
                             messageHistory.add(
@@ -99,6 +99,9 @@ public class Main {
                         catch (Exception e) {
                             e.printStackTrace();
                         }
+                    }
+                    else {
+                        System.err.println("Another type of Function " + fun.name());
                     }
                 }
             }
