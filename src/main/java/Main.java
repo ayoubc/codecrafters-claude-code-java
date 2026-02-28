@@ -73,7 +73,7 @@ public class Main {
             ChatCompletion response = client.chat().completions().create(chatParams.build());
             int i=0;
             for (var choice:response.choices()) {
-                System.out.println("Choice "+i+ " : " + choice.finishReason());
+                System.err.println("Choice "+i+ " : " + choice.finishReason());
                 i++;
             }
             ChatCompletion.Choice choice = response.choices().getFirst();
