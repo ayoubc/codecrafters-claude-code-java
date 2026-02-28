@@ -69,42 +69,41 @@ public class Main {
                     .addTool(ChatCompletionTool.builder().function(function).build());
 
             messageHistory.forEach(chatParams::addMessage);
-
-
-            ChatCompletion response = client.chat().completions().create(chatParams.build());
-            response.choices().forEach(choice -> System.out.println(choice.finishReason()));
-            ChatCompletion.Choice choice = response.choices().getFirst();
             
-            ChatCompletionMessage message = choice.message();
-            if (choice.finishReason().equals(ChatCompletion.Choice.FinishReason.STOP)) {
-                System.out.println(message.content().orElse(""));
-                break;
+            ChatCompletion response = client.chat().completions().create(chatParams.build());
+            int i=0;
+            for (var choice:response.choices()) {
+                System.out.println((i++)+ " " + choice.finishReason());
             }
-            else {
-                List<ChatCompletionMessageToolCall> toolCalls = message.toolCalls().orElse(null);
-                messageHistory.add(message);
-                if (toolCalls != null) {
-                    for (ChatCompletionMessageToolCall toolCall:toolCalls) {
-                        ChatCompletionMessageToolCall.Function fun = toolCall.function();
-                        if (fun.name().equals("Read")) {
-                            ObjectMapper mapper = new ObjectMapper();
-                            try {
-                                JsonNode rootNode = mapper.readTree(fun.arguments());
-                                messageHistory.add(
-                                        ChatCompletionMessage.builder()
-                                                .role(JsonValue.from("tool"))
-                                                .content(readFile(rootNode.get("file_path").asText()))
-                                                .putAdditionalProperty("tool_call_id", JsonValue.from(toolCall.id()))
-                                                .refusal("")
-                                                .build()
-                                );
-                            }
-                            catch (Exception e) {
-                                e.printStackTrace();
-                            }
+            ChatCompletion.Choice choice = response.choices().getFirst();
+            ChatCompletionMessage message = choice.message();
+            messageHistory.add(message);
+            List<ChatCompletionMessageToolCall> toolCalls = message.toolCalls().orElse(null);
+            if (toolCalls != null && !toolCalls.isEmpty()) {
+                for (ChatCompletionMessageToolCall toolCall:toolCalls) {
+                    ChatCompletionMessageToolCall.Function fun = toolCall.function();
+                    if (fun.name().equals("Read")) {
+                        ObjectMapper mapper = new ObjectMapper();
+                        try {
+                            JsonNode rootNode = mapper.readTree(fun.arguments());
+                            messageHistory.add(
+                                    ChatCompletionMessage.builder()
+                                            .role(JsonValue.from("tool"))
+                                            .content(readFile(rootNode.get("file_path").asText()))
+                                            .putAdditionalProperty("tool_call_id", JsonValue.from(toolCall.id()))
+                                            .refusal("")
+                                            .build()
+                            );
+                        }
+                        catch (Exception e) {
+                            e.printStackTrace();
                         }
                     }
                 }
+            }
+            else {
+                System.out.println(message.content().orElse(""));
+                break;
             }
         }
 
