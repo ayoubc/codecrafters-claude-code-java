@@ -71,11 +71,11 @@ public class Main {
             messageHistory.forEach(chatParams::addMessage);
             
             ChatCompletion response = client.chat().completions().create(chatParams.build());
-            int i=0;
-            for (var choice:response.choices()) {
-                System.err.println("Choice "+i+ " : " + choice.finishReason());
-                i++;
-            }
+//            int i=0;
+//            for (var choice:response.choices()) {
+//                System.err.println("Choice "+i+ " : " + choice.finishReason());
+//                i++;
+//            }
             ChatCompletion.Choice choice = response.choices().getFirst();
             ChatCompletionMessage message = choice.message();
             messageHistory.add(message);
@@ -91,8 +91,8 @@ public class Main {
                                     ChatCompletionMessage.builder()
                                             .role(JsonValue.from("tool"))
                                             .content(readFile(rootNode.get("file_path").asText()))
-                                            .putAdditionalProperty("tool_call_id", JsonValue.from(toolCall.id()))
                                             .refusal("")
+                                            .putAdditionalProperty("tool_call_id", JsonValue.from(toolCall.id()))
                                             .build()
                             );
                         }
