@@ -57,42 +57,35 @@ public class Main {
                 .baseUrl(baseUrl)
                 .build();
 
-        List<ChatCompletionMessage> messageHistory = new ArrayList<>();
-        messageHistory.add(
-                ChatCompletionMessage.builder()
-                        .role(JsonValue.from("user"))
-                        .refusal("")
-                        .content(prompt)
-                        .build()
-        );
+        final ChatCompletionCreateParams.Builder createParamsBuilder = ChatCompletionCreateParams.builder()
+                .model(MODEL)
+                .addTool(ChatCompletionTool.builder().function(function).build())
+                .addUserMessage(prompt);
 
         while (true) {
-            ChatCompletionCreateParams.Builder chatParams = ChatCompletionCreateParams.builder()
-                    .model(MODEL)
-                    .addTool(ChatCompletionTool.builder().function(function).build());
-
-            messageHistory.forEach(chatParams::addMessage);
-            
-            ChatCompletion response = client.chat().completions().create(chatParams.build());
+            ChatCompletion response = client.chat().completions().create(createParamsBuilder.build());
+            if (response.choices().isEmpty()) {
+                throw new RuntimeException("no choices in response");
+            }
 
             ChatCompletion.Choice choice = response.choices().getFirst();
             ChatCompletionMessage message = choice.message();
-            messageHistory.add(message);
-            List<ChatCompletionMessageToolCall> toolCalls = message.toolCalls().orElse(null);
-            if (toolCalls != null && !toolCalls.isEmpty()) {
-                System.err.println("Number of tool calls: " + toolCalls.size());
+            createParamsBuilder.addMessage(message);
+
+            if (ChatCompletion.Choice.FinishReason.TOOL_CALLS.equals(choice.finishReason())) {
+                List<ChatCompletionMessageToolCall> toolCalls = message.toolCalls().orElse(null);
+                if (toolCalls == null || toolCalls.isEmpty()) {
+                    throw new IllegalStateException("no tool calls found in the message");
+                }
                 for (ChatCompletionMessageToolCall toolCall:toolCalls) {
                     ChatCompletionMessageToolCall.Function fun = toolCall.function();
                     if (fun.name().equals("Read")) {
-
                         try {
                             JsonNode rootNode = mapper.readTree(fun.arguments());
-                            messageHistory.add(
-                                    ChatCompletionMessage.builder()
-                                            .role(JsonValue.from("tool"))
+                            createParamsBuilder.addMessage(
+                                    ChatCompletionToolMessageParam.builder()
                                             .content(readFile(rootNode.get("file_path").asText()))
-                                            .refusal("")
-                                            .putAdditionalProperty("tool_call_id", JsonValue.from(toolCall.id()))
+                                            .toolCallId(toolCall.id())
                                             .build()
                             );
                         }
@@ -105,16 +98,18 @@ public class Main {
                     }
                 }
             }
-            else {
-                System.out.println(message.content().orElse(""));
+            else if (ChatCompletion.Choice.FinishReason.STOP.equals(choice.finishReason())) {
+                message.content().ifPresent(System.out::println);
                 break;
             }
+//            else {
+//                System.out.println(message.content().orElse(""));
+//                break;
+//            }
         }
 
 
-//        if (response.choices().isEmpty()) {
-//            throw new RuntimeException("no choices in response");
-//        }
+
 
         // You can use print statements as follows for debugging, they'll be visible when running tests.
 //        System.err.println("Logs from your program will appear here!");
