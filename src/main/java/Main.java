@@ -54,58 +54,56 @@ public class Main {
                 .baseUrl(baseUrl)
                 .build();
 
-        Queue<ChatCompletionMessage> messages = new LinkedList<>();
-        messages.add(
+        List<ChatCompletionMessage> messageHistory = new ArrayList<>();
+        messageHistory.add(
                 ChatCompletionMessage.builder()
                         .role(JsonValue.from("user"))
                         .refusal("")
                         .content(prompt)
                         .build()
         );
-        while (!messages.isEmpty()) {
-            ChatCompletionMessage message = messages.poll();
-            List<ChatCompletionMessageToolCall> toolCalls = message.toolCalls().orElse(null);
-            if (toolCalls != null) {
-                for (ChatCompletionMessageToolCall toolCall:toolCalls) {
-                    ChatCompletionMessageToolCall.Function fun = toolCall.function();
-                    if (fun.name().equals("Read")) {
-                        ObjectMapper mapper = new ObjectMapper();
-                        try {
-                            JsonNode rootNode = mapper.readTree(fun.arguments());
-                            messages.add(
-                                    ChatCompletionMessage.builder()
-                                            .role(JsonValue.from("tool"))
-                                            // need to add tool_call_id = toolCalls.getFirst().id()
-                                            .content(readFile(rootNode.get("file_path").asText()))
-                                            .putAdditionalProperty("tool_call_id", JsonValue.from(toolCall.id()))
-                                            .refusal("")
-                                            .build()
-                            );
-//                        System.out.println(readFile(rootNode.get("file_path").asText()));
-                        }
-                        catch (Exception e) {
-                            e.printStackTrace();
+
+        while (true) {
+            ChatCompletionCreateParams.Builder chatParams = ChatCompletionCreateParams.builder()
+                    .model("anthropic/claude-haiku-4.5")
+                    .addTool(ChatCompletionTool.builder().function(function).build());
+
+            messageHistory.forEach(chatParams::addMessage);
+
+
+            ChatCompletion response = client.chat().completions().create(chatParams.build());
+            ChatCompletion.Choice choice = response.choices().getFirst();
+            if (choice.finishReason().equals(ChatCompletion.Choice.FinishReason.STOP)) {
+                System.out.println(choice.message().content().orElse(""));
+                break;
+            }
+            else {
+                ChatCompletionMessage message = response.choices().getFirst().message();
+                List<ChatCompletionMessageToolCall> toolCalls = message.toolCalls().orElse(null);
+                if (toolCalls != null) {
+                    for (ChatCompletionMessageToolCall toolCall:toolCalls) {
+                        ChatCompletionMessageToolCall.Function fun = toolCall.function();
+                        if (fun.name().equals("Read")) {
+                            ObjectMapper mapper = new ObjectMapper();
+                            try {
+                                JsonNode rootNode = mapper.readTree(fun.arguments());
+                                messageHistory.add(
+                                        ChatCompletionMessage.builder()
+                                                .role(JsonValue.from("tool"))
+                                                .content(readFile(rootNode.get("file_path").asText()))
+                                                .putAdditionalProperty("tool_call_id", JsonValue.from(toolCall.id()))
+                                                .refusal("")
+                                                .build()
+                                );
+                            }
+                            catch (Exception e) {
+                                e.printStackTrace();
+                            }
                         }
                     }
                 }
-
-            }
-            else {
-                ChatCompletion response = client.chat().completions().create(
-                        ChatCompletionCreateParams.builder()
-                                .model("anthropic/claude-haiku-4.5")
-                                .addUserMessage(message.content().orElse(""))
-//                                .addTool(ChatCompletionTool.builder().function(function).build())
-                                .build()
-                );
-                ChatCompletion.Choice choice = response.choices().getFirst();
-
-                if (choice.finishReason().equals(ChatCompletion.Choice.FinishReason.STOP)) {
-                    System.out.println(choice.message().content().orElse(""));
-                    break;
-                }
                 else {
-                    messages.add(choice.message());
+                    messageHistory.add(message);
                 }
             }
         }
