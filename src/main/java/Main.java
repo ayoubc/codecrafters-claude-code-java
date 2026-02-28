@@ -30,6 +30,25 @@ public class Main {
             throw new RuntimeException("OPENROUTER_API_KEY is not set");
         }
 
+        Map<String, JsonValue> properties = Map.of(
+                "file_path", JsonValue.from(Map.of(
+                        "type", JsonValue.from("string"),
+                        "description", JsonValue.from("The path to the file to read")
+                ))
+        );
+
+        FunctionParameters parameters = FunctionParameters.builder()
+                .putAdditionalProperty("type", JsonValue.from("object"))
+                .putAdditionalProperty("properties", JsonValue.from(properties))
+                .putAdditionalProperty("required", JsonValue.from(List.of("file_path")))
+                .build();
+
+        FunctionDefinition function = FunctionDefinition.builder()
+                .name("Read")
+                .description("Read and return the contents of a file")
+                .parameters(parameters)
+                .build();
+
         OpenAIClient client = OpenAIOkHttpClient.builder()
                 .apiKey(apiKey)
                 .baseUrl(baseUrl)
@@ -46,52 +65,37 @@ public class Main {
         while (!messages.isEmpty()) {
             ChatCompletionMessage message = messages.poll();
             List<ChatCompletionMessageToolCall> toolCalls = message.toolCalls().orElse(null);
-            if (toolCalls != null && !toolCalls.isEmpty()) {
-                ChatCompletionMessageToolCall.Function fun = toolCalls.getFirst().function();
-                if (fun.name().equals("Read")) {
-                    ObjectMapper mapper = new ObjectMapper();
-                    try {
-                        JsonNode rootNode = mapper.readTree(fun.arguments());
-                        messages.add(
-                                ChatCompletionMessage.builder()
-                                        .role(JsonValue.from("tool"))
-                                        // need to add tool_call_id
-                                        .content(readFile(rootNode.get("file_path").asText()))
-                                        .refusal("")
-                                        .build()
-                        );
+            if (toolCalls != null) {
+                for (ChatCompletionMessageToolCall toolCall:toolCalls) {
+                    ChatCompletionMessageToolCall.Function fun = toolCall.function();
+                    if (fun.name().equals("Read")) {
+                        ObjectMapper mapper = new ObjectMapper();
+                        try {
+                            JsonNode rootNode = mapper.readTree(fun.arguments());
+                            messages.add(
+                                    ChatCompletionMessage.builder()
+                                            .role(JsonValue.from("tool"))
+                                            // need to add tool_call_id = toolCalls.getFirst().id()
+                                            .content(readFile(rootNode.get("file_path").asText()))
+                                            .putAdditionalProperty("tool_call_id", JsonValue.from(toolCall.id()))
+                                            .refusal("")
+                                            .build()
+                            );
 //                        System.out.println(readFile(rootNode.get("file_path").asText()));
-                    }
-                    catch (Exception e) {
-                        e.printStackTrace();
+                        }
+                        catch (Exception e) {
+                            e.printStackTrace();
+                        }
                     }
                 }
+
             }
             else {
-                Map<String, JsonValue> properties = Map.of(
-                        "file_path", JsonValue.from(Map.of(
-                                "type", JsonValue.from("string"),
-                                "description", JsonValue.from("The path to the file to read")
-                        ))
-                );
-
-                FunctionParameters parameters = FunctionParameters.builder()
-                        .putAdditionalProperty("type", JsonValue.from("object"))
-                        .putAdditionalProperty("properties", JsonValue.from(properties))
-                        .putAdditionalProperty("required", JsonValue.from(List.of("file_path")))
-                        .build();
-
-                FunctionDefinition function = FunctionDefinition.builder()
-                        .name("Read")
-                        .description("Read and return the contents of a file")
-                        .parameters(parameters)
-                        .build();
-
                 ChatCompletion response = client.chat().completions().create(
                         ChatCompletionCreateParams.builder()
                                 .model("anthropic/claude-haiku-4.5")
                                 .addUserMessage(message.content().orElse(""))
-                                .addTool(ChatCompletionTool.builder().function(function).build())
+//                                .addTool(ChatCompletionTool.builder().function(function).build())
                                 .build()
                 );
                 ChatCompletion.Choice choice = response.choices().getFirst();
