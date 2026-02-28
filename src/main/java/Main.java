@@ -57,7 +57,7 @@ public class Main {
         List<ChatCompletionMessage> messageHistory = new ArrayList<>();
         messageHistory.add(
                 ChatCompletionMessage.builder()
-                        .role(ChatCompletionRole.USER)
+                        .role(JsonValue.from("user"))
                         .refusal("")
                         .content(prompt)
                         .build()
@@ -89,11 +89,10 @@ public class Main {
                             JsonNode rootNode = mapper.readTree(fun.arguments());
                             messageHistory.add(
                                     ChatCompletionMessage.builder()
-                                            .role(ChatCompletionRole.TOOL)
+                                            .role(JsonValue.from("tool"))
                                             .content(readFile(rootNode.get("file_path").asText()))
                                             .refusal("")
-                                            .toolCallId(JsonValue.from(toolCall.id()))
-//                                            .putAdditionalProperty("tool_call_id", )
+                                            .putAdditionalProperty("tool_call_id", JsonValue.from(toolCall.id()))
                                             .build()
                             );
                         }
