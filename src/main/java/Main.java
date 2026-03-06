@@ -12,6 +12,7 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class Main {
     private static final ObjectMapper mapper = new ObjectMapper();
@@ -42,8 +43,9 @@ public class Main {
 
         final ChatCompletionCreateParams.Builder createParamsBuilder = ChatCompletionCreateParams.builder()
                 .model(MODEL)
-                .addTool(ChatCompletionTool.builder().function(Read.toFunctionDefinition()).build())
-                .addTool(ChatCompletionTool.builder().function(Write.toFunctionDefinition()).build())
+                .addTool(Read.toChatCompletionTool())
+                .addTool(Write.toChatCompletionTool())
+                .addTool(Bash.toChatCompletionTool())
                 .addUserMessage(prompt);
 
         while (true) {
@@ -117,6 +119,9 @@ public class Main {
                     .parameters(parameters)
                     .build();
         }
+        public static ChatCompletionTool toChatCompletionTool() {
+            return ChatCompletionTool.builder().function(toFunctionDefinition()).build();
+        }
 
         @Override
         public String execute() {
@@ -160,12 +165,70 @@ public class Main {
                     .build();
         }
 
+        public static ChatCompletionTool toChatCompletionTool() {
+            return ChatCompletionTool.builder().function(toFunctionDefinition()).build();
+        }
+
         @Override
         public String execute() {
             try {
                 Files.writeString(Path.of(filePath), content);
                 return content;
             } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    private static class Bash implements Tool {
+        @JsonProperty("command")
+        private String command;
+
+        public static FunctionDefinition toFunctionDefinition() {
+            Map<String, JsonValue> properties = Map.of(
+                    "command", JsonValue.from(Map.of(
+                            "type", JsonValue.from("string"),
+                            "description", JsonValue.from("The command to execute")
+                    ))
+            );
+
+            FunctionParameters parameters = FunctionParameters.builder()
+                    .putAdditionalProperty("type", JsonValue.from("object"))
+                    .putAdditionalProperty("properties", JsonValue.from(properties))
+                    .putAdditionalProperty("required", JsonValue.from(List.of("command")))
+                    .build();
+
+            return FunctionDefinition.builder()
+                    .name("Bash")
+                    .description("Execute a shell command")
+                    .parameters(parameters)
+                    .build();
+        }
+
+        public static ChatCompletionTool toChatCompletionTool() {
+            return ChatCompletionTool.builder().function(toFunctionDefinition()).build();
+        }
+
+        @Override
+        public String execute() {
+            try {
+                ProcessBuilder pb;
+                String os = System.getProperty("os.name").toLowerCase();
+                if (os.contains("win")) {
+                    pb = new ProcessBuilder("cmd.exe", "/c", command);
+                } else {
+                    pb = new ProcessBuilder("/bin/bash", "-c", command);
+                }
+                pb.redirectErrorStream(true);
+                Process process = pb.start();
+                String output;
+                try (BufferedReader reader = new BufferedReader(
+                        new InputStreamReader(process.getInputStream()))) {
+                    output = reader.lines().collect(Collectors.joining("\n"));
+                }
+                process.waitFor();
+                return output;
+            } catch (Exception e) {
                 throw new RuntimeException(e);
             }
         }
