@@ -1,6 +1,5 @@
-import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openai.client.OpenAIClient;
 import com.openai.client.okhttp.OpenAIOkHttpClient;
@@ -10,7 +9,6 @@ import com.openai.models.FunctionParameters;
 import com.openai.models.chat.completions.*;
 
 import java.io.*;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
@@ -64,33 +62,17 @@ public class Main {
                     throw new IllegalStateException("no tool calls found in the message");
                 }
                 for (ChatCompletionMessageToolCall toolCall:toolCalls) {
-                    ChatCompletionMessageToolCall.Function fun = toolCall.function();
-                    String result = "";
-                    if (fun.name().equals("Read")) {
-                        try {
-                            Read read = mapper.readValue(fun.arguments(), Read.class);
-                            result = read.execute();
-                        }
-                        catch (Exception e) {
-                            e.printStackTrace();
-                        }
+                    try {
+                        createParamsBuilder.addMessage(
+                                ChatCompletionToolMessageParam.builder()
+                                        .content(executeFunction(toolCall.function()))
+                                        .toolCallId(toolCall.id())
+                                        .build()
+                        );
                     }
-                    else if (fun.name().equals("Write")) {
-                        try {
-                            Write write = mapper.readValue(fun.arguments(), Write.class);
-                            result = write.execute();
-                        }
-                        catch (Exception e) {
-                            e.printStackTrace();
-                        }
+                    catch (Exception e) {
+                        e.printStackTrace();
                     }
-
-                    createParamsBuilder.addMessage(
-                            ChatCompletionToolMessageParam.builder()
-                                    .content(result)
-                                    .toolCallId(toolCall.id())
-                                    .build()
-                    );
                 }
             }
             else if (ChatCompletion.Choice.FinishReason.STOP.equals(choice.finishReason())) {
@@ -99,12 +81,13 @@ public class Main {
             }
         }
     }
-    private static String readFile(String path) {
-        try (InputStream is = new FileInputStream(path)) {
-            return new String(is.readAllBytes(), StandardCharsets.UTF_8);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+    private static String executeFunction(ChatCompletionMessageToolCall.Function fun) throws JsonProcessingException {
+        Tool tool = switch (fun.name()) {
+            case "Read" -> mapper.readValue(fun.arguments(), Read.class);
+            case "Write" -> mapper.readValue(fun.arguments(), Write.class);
+            default -> throw new IllegalArgumentException("Unsupported function " + fun.name());
+        };
+        return tool.execute().toString();
     }
     private interface Tool {
         public Object execute();
