@@ -87,6 +87,7 @@ public class Main {
         Tool tool = switch (fun.name()) {
             case "Read" -> mapper.readValue(fun.arguments(), Read.class);
             case "Write" -> mapper.readValue(fun.arguments(), Write.class);
+            case "Bash" -> mapper.readValue(fun.arguments(), Bash.class);
             default -> throw new IllegalArgumentException("Unsupported function " + fun.name());
         };
         return tool.execute().toString();
