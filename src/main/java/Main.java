@@ -45,7 +45,7 @@ public class Main {
         final ChatCompletionCreateParams.Builder createParamsBuilder = ChatCompletionCreateParams.builder()
                 .model(MODEL)
                 .addTool(ChatCompletionTool.builder().function(Read.toFunctionDefinition()).build())
-                .addTool(ChatCompletionTool.builder().function(Read.toFunctionDefinition()).build())
+                .addTool(ChatCompletionTool.builder().function(Write.toFunctionDefinition()).build())
                 .addUserMessage(prompt);
 
         while (true) {
