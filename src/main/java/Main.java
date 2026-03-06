@@ -11,6 +11,8 @@ import com.openai.models.chat.completions.*;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
 
 public class Main {
@@ -43,6 +45,7 @@ public class Main {
         final ChatCompletionCreateParams.Builder createParamsBuilder = ChatCompletionCreateParams.builder()
                 .model(MODEL)
                 .addTool(ChatCompletionTool.builder().function(Read.toFunctionDefinition()).build())
+                .addTool(ChatCompletionTool.builder().function(Read.toFunctionDefinition()).build())
                 .addUserMessage(prompt);
 
         while (true) {
@@ -62,23 +65,32 @@ public class Main {
                 }
                 for (ChatCompletionMessageToolCall toolCall:toolCalls) {
                     ChatCompletionMessageToolCall.Function fun = toolCall.function();
+                    String result = "";
                     if (fun.name().equals("Read")) {
                         try {
                             Read read = mapper.readValue(fun.arguments(), Read.class);
-                            createParamsBuilder.addMessage(
-                                    ChatCompletionToolMessageParam.builder()
-                                            .content(read.execute())
-                                            .toolCallId(toolCall.id())
-                                            .build()
-                            );
+                            result = read.execute();
                         }
                         catch (Exception e) {
                             e.printStackTrace();
                         }
                     }
-                    else {
-                        System.err.println("Another type of Function " + fun.name());
+                    else if (fun.name().equals("Write")) {
+                        try {
+                            Write write = mapper.readValue(fun.arguments(), Write.class);
+                            result = write.execute();
+                        }
+                        catch (Exception e) {
+                            e.printStackTrace();
+                        }
                     }
+
+                    createParamsBuilder.addMessage(
+                            ChatCompletionToolMessageParam.builder()
+                                    .content(result)
+                                    .toolCallId(toolCall.id())
+                                    .build()
+                    );
                 }
             }
             else if (ChatCompletion.Choice.FinishReason.STOP.equals(choice.finishReason())) {
@@ -125,8 +137,51 @@ public class Main {
 
         @Override
         public String execute() {
-            try (InputStream is = new FileInputStream(filePath)) {
-                return new String(is.readAllBytes(), StandardCharsets.UTF_8);
+            try {
+                return Files.readString(Path.of(filePath));
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    private static class Write implements Tool {
+        @JsonProperty("file_path")
+        private String filePath;
+
+        @JsonProperty("content")
+        private String content;
+
+        public static FunctionDefinition toFunctionDefinition() {
+            Map<String, JsonValue> properties = Map.of(
+                    "file_path", JsonValue.from(Map.of(
+                            "type", JsonValue.from("string"),
+                            "description", JsonValue.from("The path of the file to write to")
+                    )),
+                    "content", JsonValue.from(Map.of(
+                            "type", JsonValue.from("string"),
+                            "description", JsonValue.from("The content to write to the file")
+                    ))
+            );
+
+            FunctionParameters parameters = FunctionParameters.builder()
+                    .putAdditionalProperty("type", JsonValue.from("object"))
+                    .putAdditionalProperty("properties", JsonValue.from(properties))
+                    .putAdditionalProperty("required", JsonValue.from(List.of("file_path", "content")))
+                    .build();
+
+            return FunctionDefinition.builder()
+                    .name("Write")
+                    .description("Write content to a file")
+                    .parameters(parameters)
+                    .build();
+        }
+
+        @Override
+        public String execute() {
+            try {
+                Files.writeString(Path.of(filePath), content);
+                return content;
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
