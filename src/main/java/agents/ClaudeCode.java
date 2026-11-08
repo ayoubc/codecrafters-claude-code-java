@@ -70,8 +70,8 @@ public class ClaudeCode implements Agent {
                     try {
                         createParamsBuilder.addMessage(
                                 ChatCompletionToolMessageParam.builder()
-                                        .content(executeFunction(toolCall.function()))
-                                        .toolCallId(toolCall.id())
+                                        .content(executeFunction(toolCall.function().get().function()))
+                                        .toolCallId(toolCall.function().get().id())
                                         .build()
                         );
                     }
@@ -88,7 +88,7 @@ public class ClaudeCode implements Agent {
     }
 
     private String buildSystemPrompt() {
-        StringBuilder sb = new StringBuilder("You have access to the following skills:\\n\\n");
+        StringBuilder sb = new StringBuilder("You have access to the following skills:\n\n");
         List<SkillMetaData> skills = skillLoader.loadSkills();
         System.out.println(skills);
         for (SkillMetaData skill : skills) {
@@ -96,12 +96,12 @@ public class ClaudeCode implements Agent {
                     .append(skill.name())
                     .append(": ")
                     .append(skill.description())
-                    .append("\\n");
+                    .append("\n");
         }
         return sb.toString();
     }
 
-    private String executeFunction(ChatCompletionMessageToolCall.Function fun) throws JsonProcessingException {
+    private String executeFunction(ChatCompletionMessageFunctionToolCall.Function fun) throws JsonProcessingException {
         Tool tool = switch (fun.name()) {
             case "Read" -> mapper.readValue(fun.arguments(), Read.class);
             case "Write" -> mapper.readValue(fun.arguments(), Write.class);
