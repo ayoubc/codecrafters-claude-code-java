@@ -62,11 +62,12 @@ public class ClaudeCode implements Agent {
             if (skillBody == null || skillBody.isEmpty()) {
                 skillBody = "Skill not found: " + skillName;
             }
-            createParamsBuilder.addMessage(
-                    ChatCompletionAssistantMessageParam.builder()
-                            .content(skillBody)
-                            .build()
-            );
+            createParamsBuilder.addUserMessage(skillBody);
+//            createParamsBuilder.addMessage(
+//                    ChatCompletionAssistantMessageParam.builder()
+//                            .content(skillBody)
+//                            .build()
+//            );
             return;
         }
 
