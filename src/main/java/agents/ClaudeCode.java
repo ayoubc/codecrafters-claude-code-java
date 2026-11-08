@@ -23,6 +23,7 @@ public class ClaudeCode implements Agent {
     private String apiKey;
     private String baseUrl;
     private OpenAIClient client;
+    private ChatCompletionCreateParams.Builder createParamsBuilder;
 
 
     public ClaudeCode () {
@@ -40,17 +41,33 @@ public class ClaudeCode implements Agent {
                 .apiKey(apiKey)
                 .baseUrl(baseUrl)
                 .build();
-    }
-    public void run(String prompt) {
 
-
-        final ChatCompletionCreateParams.Builder createParamsBuilder = ChatCompletionCreateParams.builder()
+        createParamsBuilder = ChatCompletionCreateParams.builder()
                 .model(MODEL)
                 .addTool(new Read().toChatCompletionTool())
                 .addTool(new Write().toChatCompletionTool())
                 .addTool(new Bash().toChatCompletionTool())
-                .addSystemMessage(buildSystemPrompt())
-                .addUserMessage(prompt);
+                .addSystemMessage(buildSystemPrompt());
+    }
+
+    public void run(String prompt) {
+        prompt = prompt.trim();
+        createParamsBuilder.addUserMessage(prompt);
+
+        if (prompt.startsWith("/")) {
+            String skillName = prompt.substring(1);
+            String skillBody =loadSkillBody(skillName);
+
+            if (skillBody == null || skillBody.isEmpty()) {
+                skillBody = "Skill not found: " + skillName;
+            }
+            createParamsBuilder.addMessage(
+                    ChatCompletionAssistantMessageParam.builder()
+                            .content(skillBody)
+                            .build()
+            );
+            return;
+        }
 
         while (true) {
             ChatCompletion response = client.chat().completions().create(createParamsBuilder.build());
