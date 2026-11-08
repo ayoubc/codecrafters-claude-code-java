@@ -10,11 +10,16 @@ import tools.Read;
 import tools.Tool;
 import tools.Write;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Collections;
 import java.util.List;
 
 public class ClaudeCode implements Agent {
     private static final ObjectMapper mapper = new ObjectMapper();
     private static final String MODEL = "anthropic/claude-haiku-4.5";
+    private static final Path skillsPath = Path.of(".claude", "skills");
 
     private String apiKey;
     private String baseUrl;
@@ -44,6 +49,7 @@ public class ClaudeCode implements Agent {
                 .addTool(Read.toChatCompletionTool())
                 .addTool(Write.toChatCompletionTool())
                 .addTool(Bash.toChatCompletionTool())
+                .addSystemMessage(buildSystemPrompt())
                 .addUserMessage(prompt);
 
         while (true) {
@@ -80,6 +86,24 @@ public class ClaudeCode implements Agent {
                 break;
             }
         }
+    }
+    private List<String> getSkills() {
+        try {
+            return Files.list(skillsPath)
+                    .filter(Files::isDirectory)
+                    .map(p -> p.getFileName().toString()).toList();
+        }
+        catch (IOException e) {
+            System.err.println(e.getMessage());
+        }
+        return Collections.emptyList();
+    }
+    private String buildSystemPrompt() {
+        StringBuilder sb = new StringBuilder("You have access to the following skills:\\n\\n");
+        for (String s : getSkills()) {
+            sb.append("- ").append(s).append(": \\n");
+        }
+        return sb.toString();
     }
 
     private String executeFunction(ChatCompletionMessageToolCall.Function fun) throws JsonProcessingException {
