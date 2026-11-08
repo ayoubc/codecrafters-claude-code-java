@@ -12,6 +12,7 @@ import tools.Read;
 import tools.Tool;
 import tools.Write;
 
+import java.io.IOException;
 import java.util.List;
 
 public class ClaudeCode implements Agent {
@@ -89,7 +90,7 @@ public class ClaudeCode implements Agent {
 
     private String buildSystemPrompt() {
         StringBuilder sb = new StringBuilder("You have access to the following skills:\n\n");
-        List<SkillMetaData> skills = skillLoader.loadSkills();
+        List<SkillMetaData> skills = skillLoader.loadSkillsMetaData();
 //        System.out.println(skills);
         for (SkillMetaData skill : skills) {
             sb.append("- ")
@@ -99,6 +100,16 @@ public class ClaudeCode implements Agent {
                     .append("\n");
         }
         return sb.toString();
+    }
+
+    private String loadSkillBody(String skillName) {
+        try {
+            return skillLoader.loadSkillBody(skillName);
+        } catch (IOException e) {
+            System.err.println("Could not body of the skill: " + skillName);
+            e.printStackTrace();
+        }
+        return null;
     }
 
     private String executeFunction(ChatCompletionMessageFunctionToolCall.Function fun) throws JsonProcessingException {

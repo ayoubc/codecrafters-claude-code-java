@@ -13,11 +13,12 @@ import java.util.List;
 public class SkillLoader {
     private static final ObjectMapper yamlMapper = new ObjectMapper(new YAMLFactory());
     private static final Path skillsPath = Path.of(".claude", "skills");
+    private static final String skillMdFileName = "SKILL.md";
 
 
-    public SkillMetaData loadSkill(Path skillPath) {
+    public SkillMetaData loadSkillMetaData(Path skillPath) {
         try {
-            String frontmatterYaml = extractFrontmatterString(skillPath.resolve("SKILL.md"));
+            String frontmatterYaml = extractFrontmatterText(skillPath.resolve(skillMdFileName));
 
             if (!frontmatterYaml.isEmpty()) {
                 SkillMetaData metadata = yamlMapper.readValue(frontmatterYaml, SkillMetaData.class);
@@ -30,11 +31,11 @@ public class SkillLoader {
         return null;
     }
 
-    public List<SkillMetaData> loadSkills() {
+    public List<SkillMetaData> loadSkillsMetaData() {
         try {
             return Files.list(skillsPath)
                     .filter(Files::isDirectory)
-                    .map(this::loadSkill).toList();
+                    .map(this::loadSkillMetaData).toList();
         }
         catch (IOException e) {
             System.err.println("Error reading or parsing skills: " + e.getMessage());
@@ -43,7 +44,7 @@ public class SkillLoader {
     }
 
 
-    private static String extractFrontmatterString(Path filePath) throws IOException {
+    private static String extractFrontmatterText(Path filePath) throws IOException {
         StringBuilder sb = new StringBuilder();
         boolean insideFrontmatter = false;
 
@@ -62,6 +63,29 @@ public class SkillLoader {
                 }
 
                 if (insideFrontmatter) {
+                    sb.append(line).append("\n");
+                }
+            }
+        }
+        return sb.toString();
+    }
+
+    public static String loadSkillBody(String skillName) throws IOException {
+        StringBuilder sb = new StringBuilder();
+        int frontMatterBorder = 0;
+
+        Path skillMdFilePath = skillsPath.resolve(skillName, skillMdFileName);
+        try (BufferedReader reader = Files.newBufferedReader(skillMdFilePath)) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String trimmed = line.trim();
+
+                if ("---".equals(trimmed)) {
+                    frontMatterBorder++;
+                    continue;
+                }
+
+                if (frontMatterBorder >= 2) {
                     sb.append(line).append("\n");
                 }
             }
