@@ -17,7 +17,7 @@ public class SkillLoader {
 
     public SkillMetaData loadSkill(Path skillPath) {
         try {
-            String frontmatterYaml = extractFrontmatterString(skillPath);
+            String frontmatterYaml = extractFrontmatterString(skillPath.resolve("SKILL.md"));
 
             if (!frontmatterYaml.isEmpty()) {
                 SkillMetaData metadata = yamlMapper.readValue(frontmatterYaml, SkillMetaData.class);

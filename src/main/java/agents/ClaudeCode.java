@@ -12,16 +12,11 @@ import tools.Read;
 import tools.Tool;
 import tools.Write;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Collections;
 import java.util.List;
 
 public class ClaudeCode implements Agent {
     private static final ObjectMapper mapper = new ObjectMapper();
     private static final String MODEL = "anthropic/claude-haiku-4.5";
-
     private static final SkillLoader skillLoader = new SkillLoader();
 
     private String apiKey;
