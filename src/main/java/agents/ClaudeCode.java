@@ -100,7 +100,9 @@ public class ClaudeCode implements Agent {
     }
     private String buildSystemPrompt() {
         StringBuilder sb = new StringBuilder("You have access to the following skills:\\n\\n");
-        for (String s : getSkills()) {
+        List<String> skills = getSkills();
+        System.out.println(skills);
+        for (String s : skills) {
             sb.append("- ").append(s).append(": \\n");
         }
         return sb.toString();
