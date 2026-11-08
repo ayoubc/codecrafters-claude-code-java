@@ -90,7 +90,7 @@ public class ClaudeCode implements Agent {
     private String buildSystemPrompt() {
         StringBuilder sb = new StringBuilder("You have access to the following skills:\n\n");
         List<SkillMetaData> skills = skillLoader.loadSkills();
-        System.out.println(skills);
+//        System.out.println(skills);
         for (SkillMetaData skill : skills) {
             sb.append("- ")
                     .append(skill.name())
