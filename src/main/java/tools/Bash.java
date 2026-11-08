@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.openai.core.JsonValue;
 import com.openai.models.FunctionDefinition;
 import com.openai.models.FunctionParameters;
+import com.openai.models.chat.completions.ChatCompletionFunctionTool;
 import com.openai.models.chat.completions.ChatCompletionTool;
 
 import java.io.BufferedReader;
@@ -16,7 +17,8 @@ public class Bash implements Tool {
     @JsonProperty("command")
     private String command;
 
-    public static FunctionDefinition toFunctionDefinition() {
+    @Override
+    public FunctionDefinition toFunctionDefinition() {
         Map<String, JsonValue> properties = Map.of(
                 "command", JsonValue.from(Map.of(
                         "type", JsonValue.from("string"),
@@ -37,9 +39,6 @@ public class Bash implements Tool {
                 .build();
     }
 
-    public static ChatCompletionTool toChatCompletionTool() {
-        return ChatCompletionTool.builder().function(toFunctionDefinition()).build();
-    }
 
     @Override
     public String execute() {

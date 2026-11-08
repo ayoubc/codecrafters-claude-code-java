@@ -45,9 +45,9 @@ public class ClaudeCode implements Agent {
 
         final ChatCompletionCreateParams.Builder createParamsBuilder = ChatCompletionCreateParams.builder()
                 .model(MODEL)
-                .addTool(Read.toChatCompletionTool())
-                .addTool(Write.toChatCompletionTool())
-                .addTool(Bash.toChatCompletionTool())
+                .addTool(new Read().toChatCompletionTool())
+                .addTool(new Write().toChatCompletionTool())
+                .addTool(new Bash().toChatCompletionTool())
                 .addSystemMessage(buildSystemPrompt())
                 .addUserMessage(prompt);
 

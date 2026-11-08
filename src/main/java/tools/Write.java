@@ -19,7 +19,8 @@ public class Write implements Tool {
     @JsonProperty("content")
     private String content;
 
-    public static FunctionDefinition toFunctionDefinition() {
+    @Override
+    public FunctionDefinition toFunctionDefinition() {
         Map<String, JsonValue> properties = Map.of(
                 "file_path", JsonValue.from(Map.of(
                         "type", JsonValue.from("string"),
@@ -42,10 +43,6 @@ public class Write implements Tool {
                 .description("Write content to a file")
                 .parameters(parameters)
                 .build();
-    }
-
-    public static ChatCompletionTool toChatCompletionTool() {
-        return ChatCompletionTool.builder().function(toFunctionDefinition()).build();
     }
 
     @Override

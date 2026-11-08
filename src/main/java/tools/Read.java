@@ -16,7 +16,8 @@ public class Read implements Tool {
     @JsonProperty("file_path")
     private String filePath;
 
-    public static FunctionDefinition toFunctionDefinition() {
+    @Override
+    public FunctionDefinition toFunctionDefinition() {
         Map<String, JsonValue> properties = Map.of(
                 "file_path", JsonValue.from(Map.of(
                         "type", JsonValue.from("string"),
@@ -35,9 +36,6 @@ public class Read implements Tool {
                 .description("Read and return the contents of a file")
                 .parameters(parameters)
                 .build();
-    }
-    public static ChatCompletionTool toChatCompletionTool() {
-        return ChatCompletionTool.builder().function(toFunctionDefinition()).build();
     }
 
     @Override
