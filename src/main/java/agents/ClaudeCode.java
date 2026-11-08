@@ -52,13 +52,12 @@ public class ClaudeCode implements Agent {
 
     public void run(String prompt) {
         prompt = prompt.trim();
-        createParamsBuilder.addUserMessage(prompt);
 
         if (prompt.startsWith("/")) {
             String skillName = prompt.substring(1);
-            System.out.println(skillName);
+//            System.out.println(skillName);
             String skillBody = loadSkillBody(skillName);
-            System.out.println(skillBody);
+//            System.out.println(skillBody);
             if (skillBody == null || skillBody.isEmpty()) {
                 skillBody = "Skill not found: " + skillName;
             }
@@ -71,6 +70,7 @@ public class ClaudeCode implements Agent {
             return;
         }
 
+        createParamsBuilder.addUserMessage(prompt);
         while (true) {
             ChatCompletion response = client.chat().completions().create(createParamsBuilder.build());
             if (response.choices().isEmpty()) {
