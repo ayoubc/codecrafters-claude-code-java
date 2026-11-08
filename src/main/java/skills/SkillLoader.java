@@ -51,9 +51,7 @@ public class SkillLoader {
         try (BufferedReader reader = Files.newBufferedReader(filePath)) {
             String line;
             while ((line = reader.readLine()) != null) {
-                String trimmed = line.trim();
-
-                if ("---".equals(trimmed)) {
+                if ("---".equals(line.trim())) {
                     if (!insideFrontmatter) {
                         insideFrontmatter = true;
                         continue;
@@ -61,7 +59,6 @@ public class SkillLoader {
                         break;
                     }
                 }
-
                 if (insideFrontmatter) {
                     sb.append(line).append("\n");
                 }
@@ -78,9 +75,7 @@ public class SkillLoader {
         try (BufferedReader reader = Files.newBufferedReader(skillMdFilePath)) {
             String line;
             while ((line = reader.readLine()) != null) {
-                String trimmed = line.trim();
-
-                if ("---".equals(trimmed)) {
+                if ("---".equals(line.trim())) {
                     frontMatterBorder++;
                     continue;
                 }

@@ -56,8 +56,9 @@ public class ClaudeCode implements Agent {
 
         if (prompt.startsWith("/")) {
             String skillName = prompt.substring(1);
-            String skillBody =loadSkillBody(skillName);
-
+            System.out.println(skillName);
+            String skillBody = loadSkillBody(skillName);
+            System.out.println(skillBody);
             if (skillBody == null || skillBody.isEmpty()) {
                 skillBody = "Skill not found: " + skillName;
             }
