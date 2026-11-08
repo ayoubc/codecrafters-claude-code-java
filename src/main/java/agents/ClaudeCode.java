@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openai.client.OpenAIClient;
 import com.openai.client.okhttp.OpenAIOkHttpClient;
 import com.openai.models.chat.completions.*;
+import skills.SkillLoader;
+import skills.SkillMetaData;
 import tools.Bash;
 import tools.Read;
 import tools.Tool;
@@ -19,11 +21,13 @@ import java.util.List;
 public class ClaudeCode implements Agent {
     private static final ObjectMapper mapper = new ObjectMapper();
     private static final String MODEL = "anthropic/claude-haiku-4.5";
-    private static final Path skillsPath = Path.of(".claude", "skills");
+
+    private static final SkillLoader skillLoader = new SkillLoader();
 
     private String apiKey;
     private String baseUrl;
     private OpenAIClient client;
+
 
     public ClaudeCode () {
         String apiKey = System.getenv("OPENROUTER_API_KEY");
@@ -87,23 +91,17 @@ public class ClaudeCode implements Agent {
             }
         }
     }
-    private List<String> getSkills() {
-        try {
-            return Files.list(skillsPath)
-                    .filter(Files::isDirectory)
-                    .map(p -> p.getFileName().toString()).toList();
-        }
-        catch (IOException e) {
-            System.err.println(e.getMessage());
-        }
-        return Collections.emptyList();
-    }
+
     private String buildSystemPrompt() {
         StringBuilder sb = new StringBuilder("You have access to the following skills:\\n\\n");
-        List<String> skills = getSkills();
+        List<SkillMetaData> skills = skillLoader.loadSkills();
         System.out.println(skills);
-        for (String s : skills) {
-            sb.append("- ").append(s).append(": \\n");
+        for (SkillMetaData skill : skills) {
+            sb.append("- ")
+                    .append(skill.name())
+                    .append(": ")
+                    .append(skill.description())
+                    .append("\\n");
         }
         return sb.toString();
     }
