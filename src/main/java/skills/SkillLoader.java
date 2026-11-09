@@ -9,11 +9,15 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class SkillLoader {
     private static final ObjectMapper yamlMapper = new ObjectMapper(new YAMLFactory());
     private static final Path skillsPath = Path.of(".claude", "skills");
     private static final String skillMdFileName = "SKILL.md";
+    // Matches $ARGUMENTS[N] or $N (e.g. $ARGUMENTS[0], $ARGUMENTS[1], $0, $1)
+    private static final Pattern INDEXED_PATTERN = Pattern.compile("\\$ARGUMENTS\\[(\\d+)\\]|\\$(\\d+)");
 
 
     public SkillMetaData loadSkillMetaData(Path skillPath) {
@@ -86,5 +90,42 @@ public class SkillLoader {
             }
         }
         return sb.toString();
+    }
+
+    public static String loadSkillBody(String skillName, String rawArguments) throws IOException {
+
+        String skillBody = loadSkillBody(skillName);
+
+        String fullArgs = rawArguments != null ? rawArguments.trim() : "";
+        if (fullArgs.isEmpty()) {
+            return skillBody;
+        }
+
+        // Split arguments by 1 or more whitespace characters
+        String[] args = fullArgs.split("\\s+");
+
+        // Replace indexed placeholders ($ARGUMENTS[N] and $N)
+        Matcher matcher = INDEXED_PATTERN.matcher(skillBody);
+        StringBuilder sb = new StringBuilder();
+
+        while (matcher.find()) {
+            // Group 1 matches $ARGUMENTS[N], Group 2 matches $N
+            String indexStr = matcher.group(1) != null ? matcher.group(1) : matcher.group(2);
+            int index = Integer.parseInt(indexStr);
+
+            if (index < args.length) {
+                // Escape backslashes and dollar signs in the argument to avoid regex replacement errors
+                String replacement = Matcher.quoteReplacement(args[index]);
+                matcher.appendReplacement(sb, replacement);
+            } else {
+                // If index is out of bounds, leave the placeholder untouched in the body
+                matcher.appendReplacement(sb, Matcher.quoteReplacement(matcher.group(0)));
+            }
+        }
+        matcher.appendTail(sb);
+        String result = sb.toString();
+
+        // Replace full $ARGUMENTS string
+        return result.replace("$ARGUMENTS", fullArgs);
     }
 }

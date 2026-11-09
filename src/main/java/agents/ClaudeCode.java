@@ -53,17 +53,7 @@ public class ClaudeCode implements Agent {
     public void run(String prompt) {
         prompt = prompt.trim();
 
-        if (prompt.startsWith("/")) {
-            String skillName = prompt.substring(1);
-            String skillBody = loadSkillBody(skillName);
-            if (skillBody == null || skillBody.isEmpty()) {
-                skillBody = "Skill not found: " + skillName;
-            }
-            // when calling a skill the prompt becaomse the body of the skill
-            prompt = skillBody;
-        }
-
-        createParamsBuilder.addUserMessage(prompt);
+        createParamsBuilder.addUserMessage(transformSkillToPrompt(prompt));
 
         while (true) {
             ChatCompletion response = client.chat().completions().create(createParamsBuilder.build());
@@ -101,6 +91,22 @@ public class ClaudeCode implements Agent {
         }
     }
 
+    private String transformSkillToPrompt(String prompt) {
+        if (prompt.startsWith("/")) {
+            String[] parts = prompt.split("\\s+", 2);
+
+            String skillName = parts[0].substring(1);
+            String remainingArgs = parts.length > 1 ? parts[1] : null;
+            String skillBody = loadSkillBody(skillName, remainingArgs);
+            if (skillBody == null || skillBody.isEmpty()) {
+                return prompt;
+            }
+            // when calling a skill the prompt becaomse the body of the skill
+            return skillBody;
+        }
+        return prompt;
+    }
+
     private String buildSystemPrompt() {
         StringBuilder sb = new StringBuilder("You have access to the following skills:\n\n");
         List<SkillMetaData> skills = skillLoader.loadSkillsMetaData();
@@ -115,9 +121,9 @@ public class ClaudeCode implements Agent {
         return sb.toString();
     }
 
-    private String loadSkillBody(String skillName) {
+    private String loadSkillBody(String skillName, String args) {
         try {
-            return skillLoader.loadSkillBody(skillName);
+            return skillLoader.loadSkillBody(skillName, args);
         } catch (IOException e) {
             System.err.println("Could not body of the skill: " + skillName);
             e.printStackTrace();
