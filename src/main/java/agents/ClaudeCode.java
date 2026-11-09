@@ -55,22 +55,16 @@ public class ClaudeCode implements Agent {
 
         if (prompt.startsWith("/")) {
             String skillName = prompt.substring(1);
-//            System.out.println(skillName);
             String skillBody = loadSkillBody(skillName);
-//            System.out.println(skillBody);
             if (skillBody == null || skillBody.isEmpty()) {
                 skillBody = "Skill not found: " + skillName;
             }
-//            createParamsBuilder.addUserMessage(skillBody);
-//            createParamsBuilder.addMessage(
-//                    ChatCompletionAssistantMessageParam.builder()
-//                            .content(skillBody)
-//                            .build()
-//            );
+            // when calling a skill the prompt becaomse the body of the skill
             prompt = skillBody;
         }
 
         createParamsBuilder.addUserMessage(prompt);
+
         while (true) {
             ChatCompletion response = client.chat().completions().create(createParamsBuilder.build());
             if (response.choices().isEmpty()) {
