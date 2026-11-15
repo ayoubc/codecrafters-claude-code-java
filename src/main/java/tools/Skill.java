@@ -18,6 +18,9 @@ public class Skill implements Tool {
     @JsonProperty("name")
     private String name;
 
+    @JsonProperty("args")
+    private String args;
+
     @Override
     public FunctionDefinition toFunctionDefinition() {
         Map<String, JsonValue> properties = Map.of(
@@ -47,7 +50,7 @@ public class Skill implements Tool {
     @Override
     public String execute() {
         try {
-            return skillLoader.loadSkillBody(name);
+            return skillLoader.loadSkillBody(name, args);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

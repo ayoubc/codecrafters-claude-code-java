@@ -45,6 +45,7 @@ public class ClaudeCode implements Agent {
                 .addTool(new Read().toChatCompletionTool())
                 .addTool(new Write().toChatCompletionTool())
                 .addTool(new Bash().toChatCompletionTool())
+                .addTool(new Skill().toChatCompletionTool())
                 .addSystemMessage(buildSystemPrompt());
     }
 
