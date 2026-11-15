@@ -114,8 +114,7 @@ public class ClaudeCode implements Agent {
 
         List<String> content = new ArrayList<>();
         String remainingArgs = arguments.toString();
-        System.out.println("skills: "+skills.size());
-        System.out.println("Args: "+remainingArgs);
+
         skills.forEach(skill -> {
             String skillBody = loadSkillBody(skill, remainingArgs);
             if (skillBody != null && !skillBody.isEmpty()) content.add(skillBody);
