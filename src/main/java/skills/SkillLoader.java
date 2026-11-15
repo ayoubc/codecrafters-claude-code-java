@@ -7,10 +7,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -23,7 +20,7 @@ public class SkillLoader {
     // Matches $ARGUMENTS[N] or $N (e.g. $ARGUMENTS[0], $ARGUMENTS[1], $0, $1)
     private static final Pattern INDEXED_PATTERN = Pattern.compile("\\$ARGUMENTS\\[(\\d+)\\]|\\$(\\d+)");
 
-    private Map<String, SkillMetaData> skillMap;
+    private Set<String> skillSet;
 
     public SkillMetaData loadSkillMetaData(Path skillPath) {
         try {
@@ -46,7 +43,7 @@ public class SkillLoader {
             var skillList = Files.list(skillsPath)
                     .filter(Files::isDirectory)
                     .map(this::loadSkillMetaData).toList();
-            skillMap = skillList.stream().collect(Collectors.toMap(SkillMetaData::name, Function.identity()));
+            skillSet = skillList.stream().map(SkillMetaData::name).collect(Collectors.toSet());
             return skillList;
         }
         catch (IOException e) {
@@ -56,7 +53,7 @@ public class SkillLoader {
     }
 
     public boolean isSkill(String name) {
-        return skillMap.containsKey(name);
+        return skillSet.contains(name);
     }
 
 

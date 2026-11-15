@@ -100,20 +100,21 @@ public class ClaudeCode implements Agent {
 
         List<String> skills = new ArrayList<>();
         StringBuilder arguments = new StringBuilder();
-        boolean stopExpanding = false;
+        boolean expanding = true;
         for (String str: parts) {
-            if (stopExpanding) {
-                arguments.append(str).append(" ");
-                continue;
-            }
-            if (str.startsWith("/") && skillLoader.isSkill(str)) {
+            if (str.startsWith("/") && skillLoader.isSkill(str) && expanding) {
                 skills.add(str);
             }
-            else stopExpanding = true;
+            else {
+                expanding = false;
+                arguments.append(str).append(" ");
+            }
         }
 
         List<String> content = new ArrayList<>();
         String remainingArgs = arguments.toString();
+        System.out.println("skills: "+skills.size());
+        System.out.println("Args: "+remainingArgs);
         skills.forEach(skill -> {
             String skillBody = loadSkillBody(skill, remainingArgs);
             if (skillBody != null && !skillBody.isEmpty()) content.add(skillBody);
