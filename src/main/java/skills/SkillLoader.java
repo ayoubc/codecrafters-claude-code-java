@@ -20,10 +20,16 @@ public class SkillLoader {
     // Matches $ARGUMENTS[N] or $N (e.g. $ARGUMENTS[0], $ARGUMENTS[1], $0, $1)
     private static final Pattern INDEXED_PATTERN = Pattern.compile("\\$ARGUMENTS\\[(\\d+)\\]|\\$(\\d+)");
 
+    private static final SkillLoader INSTANCE = new SkillLoader();
+
     private Set<String> skillSet;
 
-    public SkillLoader() {
+    private SkillLoader() {
         skillSet = new HashSet<>();
+    }
+
+    public static SkillLoader getInstance() {
+        return INSTANCE;
     }
 
     public SkillMetaData loadSkillMetaData(Path skillPath) {
@@ -84,7 +90,7 @@ public class SkillLoader {
         return sb.toString();
     }
 
-    public static String loadSkillBody(String skillName) throws IOException {
+    public String loadSkillBody(String skillName) throws IOException {
         StringBuilder sb = new StringBuilder();
         int frontMatterBorder = 0;
 
@@ -105,7 +111,7 @@ public class SkillLoader {
         return sb.toString();
     }
 
-    public static String loadSkillBody(String skillName, String rawArguments) throws IOException {
+    public String loadSkillBody(String skillName, String rawArguments) throws IOException {
 
         String skillBody = loadSkillBody(skillName);
 

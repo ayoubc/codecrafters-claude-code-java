@@ -7,10 +7,7 @@ import com.openai.client.okhttp.OpenAIOkHttpClient;
 import com.openai.models.chat.completions.*;
 import skills.SkillLoader;
 import skills.SkillMetaData;
-import tools.Bash;
-import tools.Read;
-import tools.Tool;
-import tools.Write;
+import tools.*;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -19,7 +16,7 @@ import java.util.List;
 public class ClaudeCode implements Agent {
     private static final ObjectMapper mapper = new ObjectMapper();
     private static final String MODEL = "anthropic/claude-haiku-4.5";
-    private static final SkillLoader skillLoader = new SkillLoader();
+    private static final SkillLoader skillLoader = SkillLoader.getInstance();
 
     private String apiKey;
     private String baseUrl;
@@ -155,6 +152,7 @@ public class ClaudeCode implements Agent {
             case "Read" -> mapper.readValue(fun.arguments(), Read.class);
             case "Write" -> mapper.readValue(fun.arguments(), Write.class);
             case "Bash" -> mapper.readValue(fun.arguments(), Bash.class);
+            case "Skill" -> mapper.readValue(fun.arguments(), Skill.class);
             default -> throw new IllegalArgumentException("Unsupported function " + fun.name());
         };
         return tool.execute().toString();
