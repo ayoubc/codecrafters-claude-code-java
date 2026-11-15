@@ -22,6 +22,10 @@ public class SkillLoader {
 
     private Set<String> skillSet;
 
+    public SkillLoader() {
+        skillSet = new HashSet<>();
+    }
+
     public SkillMetaData loadSkillMetaData(Path skillPath) {
         try {
             String frontmatterYaml = extractFrontmatterText(skillPath.resolve(skillMdFileName));
