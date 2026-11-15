@@ -6,11 +6,9 @@ import com.openai.models.FunctionDefinition;
 import com.openai.models.FunctionParameters;
 import skills.SkillLoader;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.function.Function;
 
 public class Skill implements Tool {
     private static final SkillLoader skillLoader = SkillLoader.getInstance();
@@ -20,6 +18,12 @@ public class Skill implements Tool {
 
     @JsonProperty("args")
     private String args;
+
+    private transient Function<String, String> subAgentRunner;
+
+    public void setSubAgentRunner(Function<String, String> runner) {
+        subAgentRunner = runner;
+    }
 
     @Override
     public FunctionDefinition toFunctionDefinition() {
@@ -50,7 +54,11 @@ public class Skill implements Tool {
     @Override
     public String execute() {
         try {
-            return skillLoader.loadSkillBody(name, args);
+            var skillBody = skillLoader.loadSkillBody(name, args);
+            if (skillLoader.loadSkillMetaData(name).isFork()) {
+                return subAgentRunner.apply(skillBody);
+            }
+            return skillBody;
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

@@ -21,12 +21,12 @@ public class ClaudeCode implements Agent {
     private String apiKey;
     private String baseUrl;
     private OpenAIClient client;
-    private ChatCompletionCreateParams.Builder createParamsBuilder;
+//    private ChatCompletionCreateParams.Builder createParamsBuilder;
 
 
     public ClaudeCode () {
-        String apiKey = System.getenv("OPENROUTER_API_KEY");
-        String baseUrl = System.getenv("OPENROUTER_BASE_URL");
+        apiKey = System.getenv("OPENROUTER_API_KEY");
+        baseUrl = System.getenv("OPENROUTER_BASE_URL");
 
         if (baseUrl == null || baseUrl.isEmpty()) {
             baseUrl = "https://openrouter.ai/api/v1";
@@ -40,58 +40,117 @@ public class ClaudeCode implements Agent {
                 .baseUrl(baseUrl)
                 .build();
 
-        createParamsBuilder = ChatCompletionCreateParams.builder()
+//        createParamsBuilder = ChatCompletionCreateParams.builder()
+//                .model(MODEL)
+//                .addTool(new Read().toChatCompletionTool())
+//                .addTool(new Write().toChatCompletionTool())
+//                .addTool(new Bash().toChatCompletionTool())
+//                .addTool(new Skill().toChatCompletionTool())
+//                .addSystemMessage(buildSystemPrompt());
+    }
+
+//    public void run(String prompt) {
+//        prompt = prompt.trim();
+//
+//        addSkillMessages(prompt);
+//
+//        while (true) {
+//            ChatCompletion response = client.chat().completions().create(createParamsBuilder.build());
+//            if (response.choices().isEmpty()) {
+//                throw new RuntimeException("no choices in response");
+//            }
+//
+//            ChatCompletion.Choice choice = response.choices().getFirst();
+//            ChatCompletionMessage message = choice.message();
+//            createParamsBuilder.addMessage(message);
+//
+//            if (ChatCompletion.Choice.FinishReason.TOOL_CALLS.equals(choice.finishReason())) {
+//                List<ChatCompletionMessageToolCall> toolCalls = message.toolCalls().orElse(null);
+//                if (toolCalls == null || toolCalls.isEmpty()) {
+//                    throw new IllegalStateException("no tool calls found in the message");
+//                }
+//                for (ChatCompletionMessageToolCall toolCall:toolCalls) {
+//                    try {
+//                        createParamsBuilder.addMessage(
+//                                ChatCompletionToolMessageParam.builder()
+//                                        .content(executeFunction(toolCall.function().get().function()))
+//                                        .toolCallId(toolCall.function().get().id())
+//                                        .build()
+//                        );
+//                    }
+//                    catch (Exception e) {
+//                        e.printStackTrace();
+//                    }
+//                }
+//            }
+//            else if (ChatCompletion.Choice.FinishReason.STOP.equals(choice.finishReason())) {
+//                message.content().ifPresent(System.out::println);
+//                break;
+//            }
+//        }
+//    }
+    private ChatCompletionCreateParams.Builder createParamBuilder(String prompt) {
+        return  ChatCompletionCreateParams.builder()
                 .model(MODEL)
                 .addTool(new Read().toChatCompletionTool())
                 .addTool(new Write().toChatCompletionTool())
                 .addTool(new Bash().toChatCompletionTool())
                 .addTool(new Skill().toChatCompletionTool())
-                .addSystemMessage(buildSystemPrompt());
+                .addSystemMessage(prompt);
     }
-
     public void run(String prompt) {
         prompt = prompt.trim();
 
-        addSkillMessages(prompt);
+        ChatCompletionCreateParams.Builder createParamsBuilder = createParamBuilder(buildSystemPrompt());
 
+        addSkillMessages(prompt, createParamsBuilder);
+
+        String result = runAgentLoop(createParamsBuilder);
+        if (result != null && !result.isEmpty()) {
+            System.out.println(result);
+        }
+    }
+    private String runAgentLoop(ChatCompletionCreateParams.Builder paramsBuilder) {
         while (true) {
-            ChatCompletion response = client.chat().completions().create(createParamsBuilder.build());
+            ChatCompletion response = client.chat().completions().create(paramsBuilder.build());
             if (response.choices().isEmpty()) {
                 throw new RuntimeException("no choices in response");
             }
 
             ChatCompletion.Choice choice = response.choices().getFirst();
             ChatCompletionMessage message = choice.message();
-            createParamsBuilder.addMessage(message);
+            paramsBuilder.addMessage(message);
 
             if (ChatCompletion.Choice.FinishReason.TOOL_CALLS.equals(choice.finishReason())) {
                 List<ChatCompletionMessageToolCall> toolCalls = message.toolCalls().orElse(null);
                 if (toolCalls == null || toolCalls.isEmpty()) {
                     throw new IllegalStateException("no tool calls found in the message");
                 }
-                for (ChatCompletionMessageToolCall toolCall:toolCalls) {
+                for (ChatCompletionMessageToolCall toolCall : toolCalls) {
                     try {
-                        createParamsBuilder.addMessage(
+                        paramsBuilder.addMessage(
                                 ChatCompletionToolMessageParam.builder()
                                         .content(executeFunction(toolCall.function().get().function()))
                                         .toolCallId(toolCall.function().get().id())
                                         .build()
                         );
-                    }
-                    catch (Exception e) {
+                    } catch (Exception e) {
                         e.printStackTrace();
                     }
                 }
             }
             else if (ChatCompletion.Choice.FinishReason.STOP.equals(choice.finishReason())) {
-                message.content().ifPresent(System.out::println);
-                break;
+                return message.content().orElse("");
             }
         }
     }
-    private void addSkillMessages(String prompt) {
+    private String runSubagent(String skillPrompt) {
+        ChatCompletionCreateParams.Builder subagentBuilder = createParamBuilder(skillPrompt);
+        return runAgentLoop(subagentBuilder);
+    }
+    private void addSkillMessages(String prompt, ChatCompletionCreateParams.Builder builder) {
         List<String> content = loadSkills(prompt);
-        content.forEach(createParamsBuilder::addUserMessage);
+        content.forEach(builder::addUserMessage);
     }
     private List<String> loadSkills(String prompt) {
         String[] parts = prompt.split("\\s+");
@@ -153,7 +212,11 @@ public class ClaudeCode implements Agent {
             case "Read" -> mapper.readValue(fun.arguments(), Read.class);
             case "Write" -> mapper.readValue(fun.arguments(), Write.class);
             case "Bash" -> mapper.readValue(fun.arguments(), Bash.class);
-            case "Skill" -> mapper.readValue(fun.arguments(), Skill.class);
+            case "Skill" -> {
+                Skill skill = mapper.readValue(fun.arguments(), Skill.class);
+                skill.setSubAgentRunner(this::runSubagent);
+                yield  skill;
+            }
             default -> throw new IllegalArgumentException("Unsupported function " + fun.name());
         };
         return tool.execute().toString();

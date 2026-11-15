@@ -22,16 +22,19 @@ public class SkillLoader {
 
     private static final SkillLoader INSTANCE = new SkillLoader();
 
-    private Set<String> skillSet;
+    private Map<String, SkillMetaData> skillMap;
 
     private SkillLoader() {
-        skillSet = new HashSet<>();
+        skillMap = new HashMap<>();
     }
 
     public static SkillLoader getInstance() {
         return INSTANCE;
     }
 
+    public SkillMetaData loadSkillMetaData(String skillName) {
+        return skillMap.get(skillName);
+    }
     public SkillMetaData loadSkillMetaData(Path skillPath) {
         try {
             String frontmatterYaml = extractFrontmatterText(skillPath.resolve(skillMdFileName));
@@ -53,7 +56,8 @@ public class SkillLoader {
             var skillList = Files.list(skillsPath)
                     .filter(Files::isDirectory)
                     .map(this::loadSkillMetaData).toList();
-            skillSet = skillList.stream().map(SkillMetaData::name).collect(Collectors.toSet());
+            skillMap = skillList.stream()
+                    .collect(Collectors.toMap(SkillMetaData::name, Function.identity()));
             return skillList;
         }
         catch (IOException e) {
@@ -63,9 +67,8 @@ public class SkillLoader {
     }
 
     public boolean isSkill(String name) {
-        return skillSet.contains(name);
+        return skillMap.containsKey(name);
     }
-
 
     private static String extractFrontmatterText(Path filePath) throws IOException {
         StringBuilder sb = new StringBuilder();
