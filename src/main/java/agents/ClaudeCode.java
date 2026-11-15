@@ -102,8 +102,9 @@ public class ClaudeCode implements Agent {
         StringBuilder arguments = new StringBuilder();
         boolean expanding = true;
         for (String str: parts) {
-            if (str.startsWith("/") && skillLoader.isSkill(str) && expanding) {
-                skills.add(str);
+            var skill = str.startsWith("/") ? str.substring(1) : str;
+            if (skillLoader.isSkill(skill) && expanding) {
+                skills.add(skill);
             }
             else {
                 expanding = false;
