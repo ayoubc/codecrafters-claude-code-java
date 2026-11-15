@@ -21,7 +21,6 @@ public class ClaudeCode implements Agent {
     private String apiKey;
     private String baseUrl;
     private OpenAIClient client;
-//    private ChatCompletionCreateParams.Builder createParamsBuilder;
 
 
     public ClaudeCode () {
@@ -39,56 +38,8 @@ public class ClaudeCode implements Agent {
                 .apiKey(apiKey)
                 .baseUrl(baseUrl)
                 .build();
-
-//        createParamsBuilder = ChatCompletionCreateParams.builder()
-//                .model(MODEL)
-//                .addTool(new Read().toChatCompletionTool())
-//                .addTool(new Write().toChatCompletionTool())
-//                .addTool(new Bash().toChatCompletionTool())
-//                .addTool(new Skill().toChatCompletionTool())
-//                .addSystemMessage(buildSystemPrompt());
     }
 
-//    public void run(String prompt) {
-//        prompt = prompt.trim();
-//
-//        addSkillMessages(prompt);
-//
-//        while (true) {
-//            ChatCompletion response = client.chat().completions().create(createParamsBuilder.build());
-//            if (response.choices().isEmpty()) {
-//                throw new RuntimeException("no choices in response");
-//            }
-//
-//            ChatCompletion.Choice choice = response.choices().getFirst();
-//            ChatCompletionMessage message = choice.message();
-//            createParamsBuilder.addMessage(message);
-//
-//            if (ChatCompletion.Choice.FinishReason.TOOL_CALLS.equals(choice.finishReason())) {
-//                List<ChatCompletionMessageToolCall> toolCalls = message.toolCalls().orElse(null);
-//                if (toolCalls == null || toolCalls.isEmpty()) {
-//                    throw new IllegalStateException("no tool calls found in the message");
-//                }
-//                for (ChatCompletionMessageToolCall toolCall:toolCalls) {
-//                    try {
-//                        createParamsBuilder.addMessage(
-//                                ChatCompletionToolMessageParam.builder()
-//                                        .content(executeFunction(toolCall.function().get().function()))
-//                                        .toolCallId(toolCall.function().get().id())
-//                                        .build()
-//                        );
-//                    }
-//                    catch (Exception e) {
-//                        e.printStackTrace();
-//                    }
-//                }
-//            }
-//            else if (ChatCompletion.Choice.FinishReason.STOP.equals(choice.finishReason())) {
-//                message.content().ifPresent(System.out::println);
-//                break;
-//            }
-//        }
-//    }
     private ChatCompletionCreateParams.Builder createParamBuilder(String prompt) {
         return  ChatCompletionCreateParams.builder()
                 .model(MODEL)
