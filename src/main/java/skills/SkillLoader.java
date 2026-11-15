@@ -8,9 +8,13 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public class SkillLoader {
     private static final ObjectMapper yamlMapper = new ObjectMapper(new YAMLFactory());
@@ -19,6 +23,7 @@ public class SkillLoader {
     // Matches $ARGUMENTS[N] or $N (e.g. $ARGUMENTS[0], $ARGUMENTS[1], $0, $1)
     private static final Pattern INDEXED_PATTERN = Pattern.compile("\\$ARGUMENTS\\[(\\d+)\\]|\\$(\\d+)");
 
+    private Map<String, SkillMetaData> skillMap;
 
     public SkillMetaData loadSkillMetaData(Path skillPath) {
         try {
@@ -37,14 +42,21 @@ public class SkillLoader {
 
     public List<SkillMetaData> loadSkillsMetaData() {
         try {
-            return Files.list(skillsPath)
+
+            var skillList = Files.list(skillsPath)
                     .filter(Files::isDirectory)
                     .map(this::loadSkillMetaData).toList();
+            skillMap = skillList.stream().collect(Collectors.toMap(SkillMetaData::name, Function.identity()));
+            return skillList;
         }
         catch (IOException e) {
             System.err.println("Error reading or parsing skills: " + e.getMessage());
         }
         return Collections.emptyList();
+    }
+
+    public boolean isSkill(String name) {
+        return skillMap.containsKey(name);
     }
 
 

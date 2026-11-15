@@ -13,6 +13,7 @@ import tools.Tool;
 import tools.Write;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 public class ClaudeCode implements Agent {
@@ -53,7 +54,7 @@ public class ClaudeCode implements Agent {
     public void run(String prompt) {
         prompt = prompt.trim();
 
-        createParamsBuilder.addUserMessage(transformSkillToPrompt(prompt));
+        addSkillMessages(prompt);
 
         while (true) {
             ChatCompletion response = client.chat().completions().create(createParamsBuilder.build());
@@ -90,27 +91,44 @@ public class ClaudeCode implements Agent {
             }
         }
     }
+    private void addSkillMessages(String prompt) {
+        List<String> content = loadSkills(prompt);
+        content.forEach(createParamsBuilder::addUserMessage);
+    }
+    private List<String> loadSkills(String prompt) {
+        String[] parts = prompt.split("\\s+");
 
-    private String transformSkillToPrompt(String prompt) {
-        if (prompt.startsWith("/")) {
-            String[] parts = prompt.split("\\s+", 2);
-
-            String skillName = parts[0].substring(1);
-            String remainingArgs = parts.length > 1 ? parts[1] : null;
-            String skillBody = loadSkillBody(skillName, remainingArgs);
-            if (skillBody == null || skillBody.isEmpty()) {
-                return prompt;
+        List<String> skills = new ArrayList<>();
+        StringBuilder arguments = new StringBuilder();
+        boolean stopExpanding = false;
+        for (String str: parts) {
+            if (stopExpanding) {
+                arguments.append(str).append(" ");
+                continue;
             }
-            // when calling a skill the prompt becaomse the body of the skill
-            return skillBody;
+            if (str.startsWith("/") && skillLoader.isSkill(str)) {
+                skills.add(str);
+            }
+            else stopExpanding = true;
         }
-        return prompt;
+
+        List<String> content = new ArrayList<>();
+        String remainingArgs = arguments.toString();
+        skills.forEach(skill -> {
+            String skillBody = loadSkillBody(skill, remainingArgs);
+            if (skillBody != null && !skillBody.isEmpty()) content.add(skillBody);
+        });
+
+        if (content.isEmpty()) {
+            return List.of(prompt);
+        }
+        return content;
     }
 
     private String buildSystemPrompt() {
         StringBuilder sb = new StringBuilder("You have access to the following skills:\n\n");
         List<SkillMetaData> skills = skillLoader.loadSkillsMetaData();
-//        System.out.println(skills);
+
         for (SkillMetaData skill : skills) {
             sb.append("- ")
                     .append(skill.name())
