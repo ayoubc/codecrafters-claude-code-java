@@ -2,8 +2,6 @@ package tools;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.openai.core.JsonValue;
-import com.openai.models.FunctionDefinition;
-import com.openai.models.FunctionParameters;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -11,30 +9,27 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-public class Bash implements Tool {
+public class Bash extends Tool {
     @JsonProperty("command")
     private String command;
 
+    public Bash() {
+        super(
+                "Bash",
+                "Execute a shell command",
+                "object",
+                List.of("command")
+        );
+    }
+
     @Override
-    public FunctionDefinition toFunctionDefinition() {
-        Map<String, JsonValue> properties = Map.of(
+    public Map<String, JsonValue> getProperties() {
+        return Map.of(
                 "command", JsonValue.from(Map.of(
                         "type", JsonValue.from("string"),
                         "description", JsonValue.from("The command to execute")
                 ))
         );
-
-        FunctionParameters parameters = FunctionParameters.builder()
-                .putAdditionalProperty("type", JsonValue.from("object"))
-                .putAdditionalProperty("properties", JsonValue.from(properties))
-                .putAdditionalProperty("required", JsonValue.from(List.of("command")))
-                .build();
-
-        return FunctionDefinition.builder()
-                .name("Bash")
-                .description("Execute a shell command")
-                .parameters(parameters)
-                .build();
     }
 
 

@@ -2,8 +2,6 @@ package tools;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.openai.core.JsonValue;
-import com.openai.models.FunctionDefinition;
-import com.openai.models.FunctionParameters;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -11,30 +9,27 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 
-public class Read implements Tool {
+public class Read extends Tool {
     @JsonProperty("file_path")
     private String filePath;
 
+    public Read() {
+        super(
+                "Read",
+                "Read and return the contents of a file",
+                "object",
+                List.of("file_path")
+        );
+    }
+
     @Override
-    public FunctionDefinition toFunctionDefinition() {
-        Map<String, JsonValue> properties = Map.of(
+    public Map<String, JsonValue> getProperties() {
+        return Map.of(
                 "file_path", JsonValue.from(Map.of(
                         "type", JsonValue.from("string"),
                         "description", JsonValue.from("The path to the file to read")
                 ))
         );
-
-        FunctionParameters parameters = FunctionParameters.builder()
-                .putAdditionalProperty("type", JsonValue.from("object"))
-                .putAdditionalProperty("properties", JsonValue.from(properties))
-                .putAdditionalProperty("required", JsonValue.from(List.of("file_path")))
-                .build();
-
-        return FunctionDefinition.builder()
-                .name("Read")
-                .description("Read and return the contents of a file")
-                .parameters(parameters)
-                .build();
     }
 
     @Override
