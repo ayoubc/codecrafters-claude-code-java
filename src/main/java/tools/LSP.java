@@ -57,7 +57,7 @@ public class LSP extends Tool {
     @Override
     public String execute() {
         try {
-            return "";
+            return "LSP is not implemented yet";
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
