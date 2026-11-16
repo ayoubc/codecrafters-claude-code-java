@@ -9,11 +9,17 @@ import java.util.Map;
 
 public class LSP extends Tool {
 
-    @JsonProperty("name")
-    private String name;
+    @JsonProperty("operation")
+    private String operation;
 
-    @JsonProperty("args")
-    private String args;
+    @JsonProperty("filePath")
+    private String filePath;
+
+    @JsonProperty("line")
+    private Integer line;
+
+    @JsonProperty("character")
+    private Integer character;
 
     public LSP() {
         super(
