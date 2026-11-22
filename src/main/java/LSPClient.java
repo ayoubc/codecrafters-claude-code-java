@@ -107,6 +107,9 @@ public final class LSPClient implements LanguageServerClient {
     private String formatDefinitionResult(Path workingDir, String rawResponse) throws Exception {
         DefinitionResponse response = MAPPER.readValue(rawResponse, DefinitionResponse.class);
 
+        if (response == null || response.range() == null || response.range().start() == null) {
+            throw new IllegalStateException("An expected response body for definition request " + rawResponse);
+        }
         int oneBasedLine = response.range().start().line() + 1;
         int oneBasedChar = response.range().start().character() + 1;
 
