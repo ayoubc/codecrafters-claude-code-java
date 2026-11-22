@@ -40,4 +40,9 @@ public final class LSPClient implements LanguageServerClient {
         return response.body();
     }
 
+    @Override
+    public Map<String, String> getExtensionToLanguageMap() {
+        return extensionToLanguage;
+    }
+
 }

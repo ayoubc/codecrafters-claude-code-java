@@ -177,7 +177,11 @@ public class ClaudeCode implements Agent {
                 skill.setSubAgentRunner(this::runSubagent);
                 yield  skill;
             }
-            case "LSP" -> mapper.readValue(fun.arguments(), LSP.class);
+            case "LSP" -> {
+                LSP lsp = mapper.readValue(fun.arguments(), LSP.class);
+                lsp.setLspClient(this.lspClient);
+                yield lsp;
+            }
             default -> throw new IllegalArgumentException("Unsupported function " + fun.name());
         };
         return tool.execute().toString();
