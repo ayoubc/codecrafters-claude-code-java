@@ -78,7 +78,7 @@ public final class LSPClient implements LanguageServerClient {
                         .build())
                 .build();
         String json = MAPPER.writeValueAsString(payload);
-        String action = Action.NOTIFY.value();
+        String action = Action.REQUEST.value();
         System.err.println("[LSP " + action + "] sending JSON: " + json);
         String rawResponse = call(action, json);
         System.err.println("Response: " + rawResponse);
