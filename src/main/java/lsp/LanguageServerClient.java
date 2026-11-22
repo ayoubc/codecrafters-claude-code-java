@@ -1,8 +1,9 @@
 package lsp;
 
-import java.util.Map;
-
 public interface LanguageServerClient {
     public String call(String action, String json) throws Exception;
-    public Map<String, String> getExtensionToLanguageMap();
+    public String goToDefinition(String filePath, int line, int character) throws Exception;
+    default String call(Action action, String json) throws Exception {
+        return call(action.value(), json);
+    }
 }
