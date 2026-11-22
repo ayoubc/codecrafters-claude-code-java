@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openai.client.OpenAIClient;
 import com.openai.client.okhttp.OpenAIOkHttpClient;
 import com.openai.models.chat.completions.*;
+import lsp.LanguageServerClient;
 import skills.SkillLoader;
 import skills.SkillMetaData;
 import tools.*;
@@ -21,9 +22,14 @@ public class ClaudeCode implements Agent {
     private String apiKey;
     private String baseUrl;
     private OpenAIClient client;
+    private LanguageServerClient lspClient;
 
 
-    public ClaudeCode () {
+    public ClaudeCode() {
+        this(null);
+    }
+
+    public ClaudeCode (LanguageServerClient lspClient) {
         apiKey = System.getenv("OPENROUTER_API_KEY");
         baseUrl = System.getenv("OPENROUTER_BASE_URL");
 
@@ -33,6 +39,8 @@ public class ClaudeCode implements Agent {
         if (apiKey == null || apiKey.isEmpty()) {
             throw new RuntimeException("OPENROUTER_API_KEY is not set");
         }
+
+        this.lspClient = lspClient;
 
         client = OpenAIOkHttpClient.builder()
                 .apiKey(apiKey)
