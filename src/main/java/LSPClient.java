@@ -77,7 +77,12 @@ public final class LSPClient implements LanguageServerClient {
                                 .build())
                         .build())
                 .build();
-        return call(Action.NOTIFY, MAPPER.writeValueAsString(payload));
+        String json = MAPPER.writeValueAsString(payload);
+        String action = Action.NOTIFY.value();
+        System.err.println("[LSP " + action + "] sending JSON: " + json);
+        String rawResponse = call(action, json);
+        System.err.println("Response: " + rawResponse);
+        return call(action, json);
     }
 
     private void sendNotificationDidOpen(Path file, String uri) throws Exception {
