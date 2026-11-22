@@ -161,7 +161,7 @@ public class ClaudeCode implements Agent {
         try {
             return skillLoader.loadSkillBody(skillName, args);
         } catch (IOException e) {
-            System.err.println("Could not body of the skill: " + skillName);
+            System.err.println("Could not load body of the skill: " + skillName);
             e.printStackTrace();
         }
         return null;
@@ -177,6 +177,7 @@ public class ClaudeCode implements Agent {
                 skill.setSubAgentRunner(this::runSubagent);
                 yield  skill;
             }
+            case "LSP" -> mapper.readValue(fun.arguments(), LSP.class);
             default -> throw new IllegalArgumentException("Unsupported function " + fun.name());
         };
         return tool.execute().toString();
