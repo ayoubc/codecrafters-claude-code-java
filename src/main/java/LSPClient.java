@@ -144,7 +144,9 @@ public final class LSPClient implements LanguageServerClient {
                 .build();
 
         String rawResponse = call(Action.REQUEST, MAPPER.writeValueAsString(payload));
-        return formatReferencesResult(workingDir, rawResponse);
+        String res = formatReferencesResult(workingDir, rawResponse);
+        System.err.println(res);
+        return res;
     }
 
     private String formatReferencesResult(Path workingDir, String rawResponse) throws Exception {
@@ -185,8 +187,7 @@ public final class LSPClient implements LanguageServerClient {
                 sb.append(lineEntry).append("\n");
             }
         }
-        String res = sb.toString().stripTrailing();
-        System.err.println(res);
-        return res;
+
+        return sb.toString();
     }
 }
