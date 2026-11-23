@@ -185,7 +185,8 @@ public final class LSPClient implements LanguageServerClient {
                 sb.append(lineEntry).append("\n");
             }
         }
-
-        return sb.toString().stripTrailing();
+        String res = sb.toString().stripTrailing();
+        System.err.println(res);
+        return res;
     }
 }
