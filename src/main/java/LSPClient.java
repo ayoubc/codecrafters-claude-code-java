@@ -144,9 +144,7 @@ public final class LSPClient implements LanguageServerClient {
                 .build();
 
         String rawResponse = call(Action.REQUEST, MAPPER.writeValueAsString(payload));
-        String res = formatReferencesResult(workingDir, rawResponse);
-        System.err.println("Result of references: " + res);
-        return res;
+        return formatReferencesResult(workingDir, rawResponse);
     }
 
     private String formatReferencesResult(Path workingDir, String rawResponse) throws Exception {
@@ -182,7 +180,6 @@ public final class LSPClient implements LanguageServerClient {
                 .append(fileCount).append(fileCount == 1 ? " file:\n" : " files:\n");
 
         for (Map.Entry<String, List<String>> entry : byFile.entrySet()) {
-            System.out.println("File :" + entry.getKey() + " With Changes: "+entry.getValue().size());
             sb.append("\n").append(entry.getKey()).append(":\n");
             for (String lineEntry : entry.getValue()) {
                 sb.append(lineEntry).append("\n");
