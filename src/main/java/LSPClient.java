@@ -145,7 +145,7 @@ public final class LSPClient implements LanguageServerClient {
 
         String rawResponse = call(Action.REQUEST, MAPPER.writeValueAsString(payload));
         String res = formatReferencesResult(workingDir, rawResponse);
-        System.err.println(res);
+        System.err.println("Result of references: " + res);
         return res;
     }
 
