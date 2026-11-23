@@ -6,4 +6,5 @@ public interface LanguageServerClient {
     default String call(Action action, String json) throws Exception {
         return call(action.value(), json);
     }
+    String findReferences(String filePath, int line, int character) throws Exception;
 }

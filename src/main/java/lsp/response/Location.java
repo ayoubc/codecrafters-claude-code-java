@@ -3,7 +3,7 @@ package lsp.response;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public record DefinitionResponse(String uri, Range range) {
+public record Location(String uri, Range range) {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record Range(Position start, Position end) {}

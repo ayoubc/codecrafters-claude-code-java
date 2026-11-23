@@ -1,8 +1,8 @@
-package lsp.payloads;
+package lsp.payloads.notifications;
 
 import java.util.Objects;
 
-public record DidOpenNotification(String method, DidOpenParams params) {
+public record DidOpen(String method, DidOpenParams params) {
     public static Builder builder() {
         return new Builder();
     }
@@ -21,8 +21,8 @@ public record DidOpenNotification(String method, DidOpenParams params) {
             return this;
         }
 
-        public DidOpenNotification build() {
-            return new DidOpenNotification(
+        public DidOpen build() {
+            return new DidOpen(
                     Objects.requireNonNull(method, "method"),
                     Objects.requireNonNull(params, "params")
             );

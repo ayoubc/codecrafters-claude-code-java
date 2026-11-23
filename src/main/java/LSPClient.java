@@ -8,15 +8,19 @@ import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lsp.Action;
-import lsp.response.DefinitionResponse;
+import lsp.payloads.notifications.DidOpen;
+import lsp.payloads.requests.Definition;
+import lsp.payloads.requests.References;
+import lsp.payloads.requests.TextDocumentIdentifier;
+import lsp.payloads.requests.Position;
+import lsp.response.Location;
 import lsp.LanguageServerClient;
-import lsp.payloads.*;
 
 public final class LSPClient implements LanguageServerClient {
     private static final ObjectMapper MAPPER = new ObjectMapper();
@@ -66,12 +70,12 @@ public final class LSPClient implements LanguageServerClient {
 
     private String sendDefinitionRequest(String uri, int zeroBasedLine, int zeroBasedChar) throws Exception {
 
-        DefinitionRequest payload = DefinitionRequest.builder()
-                .params(DefinitionRequest.DefinitionParams.builder()
-                        .textDocument(DefinitionRequest.TextDocumentIdentifier.builder()
+        Definition payload = Definition.builder()
+                .params(Definition.DefinitionParams.builder()
+                        .textDocument(TextDocumentIdentifier.builder()
                                 .uri(uri)
                                 .build())
-                        .position(DefinitionRequest.Position.builder()
+                        .position(Position.builder()
                                 .line(Math.max(0, zeroBasedLine))
                                 .character(Math.max(0, zeroBasedChar))
                                 .build())
@@ -91,9 +95,9 @@ public final class LSPClient implements LanguageServerClient {
                 ? extensionToLanguage.getOrDefault(ext, "plaintext")
                 : "plaintext";
 
-        DidOpenNotification payload = DidOpenNotification.builder()
-                .params(DidOpenNotification.DidOpenParams.builder()
-                        .textDocument(DidOpenNotification.TextDocumentItem.builder()
+        DidOpen payload = DidOpen.builder()
+                .params(DidOpen.DidOpenParams.builder()
+                        .textDocument(DidOpen.TextDocumentItem.builder()
                                 .uri(uri)
                                 .languageId(languageId)
                                 .version(1)
@@ -106,7 +110,7 @@ public final class LSPClient implements LanguageServerClient {
     }
 
     private String formatDefinitionResult(Path workingDir, String rawResponse) throws Exception {
-        DefinitionResponse response = MAPPER.readValue(rawResponse, DefinitionResponse.class);
+        Location response = MAPPER.readValue(rawResponse, Location.class);
 
         if (response == null || response.range() == null || response.range().start() == null) {
             throw new IllegalStateException("An expected response body for definition request " + rawResponse);
@@ -118,5 +122,70 @@ public final class LSPClient implements LanguageServerClient {
         String relativePath = workingDir.relativize(targetPath).toString().replace('\\', '/');
 
         return String.format("Defined in %s:%d:%d", relativePath, oneBasedLine, oneBasedChar);
+    }
+
+    @Override
+    public String findReferences(String filePath, int line, int character) throws Exception {
+        Path workingDir = Path.of("").toAbsolutePath().normalize();
+        Path file = workingDir.resolve(filePath).normalize();
+        String uri = file.toUri().toASCIIString();
+
+        sendNotificationDidOpen(file, uri);
+
+        References payload = References.builder()
+                .params(References.ReferenceParams.builder()
+                        .textDocument(TextDocumentIdentifier.builder().uri(uri).build())
+                        .position(Position.builder()
+                                .line(Math.max(0, line - 1))
+                                .character(Math.max(0, character - 1))
+                                .build())
+                        .context(References.ReferenceContext.builder().includeDeclaration(true).build())
+                        .build())
+                .build();
+
+        String rawResponse = call(Action.REQUEST, MAPPER.writeValueAsString(payload));
+        return formatReferencesResult(workingDir, rawResponse);
+    }
+
+    private String formatReferencesResult(Path workingDir, String rawResponse) throws Exception {
+        if (rawResponse == null || rawResponse.isBlank()) {
+            return "No references found";
+        }
+
+        List<Location> locations = MAPPER.readValue(rawResponse, new TypeReference<List<Location>>() {});
+
+        if (locations.isEmpty()) {
+            return "No references found";
+        }
+
+        Map<String, List<String>> byFile = new HashMap<>();
+        for (Location loc : locations) {
+            Path refPath = Path.of(URI.create(loc.uri())).toAbsolutePath().normalize();
+            String relativePath = workingDir.relativize(refPath).toString().replace('\\', '/');
+
+            int oneBasedLine = loc.range().start().line() + 1;
+            int oneBasedChar = loc.range().start().character() + 1;
+
+            byFile.computeIfAbsent(relativePath, k -> new ArrayList<>())
+                    .add("  Line " + oneBasedLine + ":" + oneBasedChar);
+        }
+
+        int totalCount = locations.size();
+        int fileCount = byFile.size();
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("Found ")
+                .append(totalCount).append(totalCount == 1 ? " reference" : " references")
+                .append(" across ")
+                .append(fileCount).append(fileCount == 1 ? " file:\n" : " files:\n");
+
+        for (Map.Entry<String, List<String>> entry : byFile.entrySet()) {
+            sb.append("\n").append(entry.getKey()).append(":\n");
+            for (String lineEntry : entry.getValue()) {
+                sb.append(lineEntry).append("\n");
+            }
+        }
+
+        return sb.toString().stripTrailing();
     }
 }

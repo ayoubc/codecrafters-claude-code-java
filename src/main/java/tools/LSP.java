@@ -66,11 +66,11 @@ public class LSP extends Tool {
             if (lspClient == null) {
                 throw new IllegalStateException("LSP client is not configured");
             }
-            if ("goToDefinition".equals(operation)) {
-                return lspClient.goToDefinition(filePath, line, character);
-            }
-
-            throw new IllegalArgumentException("Unsupported LSP operation: " + operation);
+            return switch (operation) {
+                case "goToDefinition" -> lspClient.goToDefinition(filePath, line, character);
+                case "findReferences" -> lspClient.findReferences(filePath, line, character);
+                default -> throw new IllegalArgumentException("Unsupported LSP operation: " + operation);
+            };
 
         } catch (Exception e) {
             throw new RuntimeException(e);
