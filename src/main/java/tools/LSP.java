@@ -41,7 +41,7 @@ public class LSP extends Tool {
         return Map.of(
                 "operation", JsonValue.from(Map.of(
                         "type", JsonValue.from("string"),
-                        "enum", JsonValue.from(List.of("goToDefinition"))
+                        "enum", JsonValue.from(List.of("goToDefinition", "findReferences"))
                 )),
                 "filePath", JsonValue.from(Map.of(
                         "type", JsonValue.from("string"),
